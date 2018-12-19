@@ -1,7 +1,7 @@
 #coding:utf-8
 from peewee import CharField, BooleanField, IntegerField
-
 from models import BaseModel
+
 
 class Album(BaseModel):
     name      = CharField(null=False, index=True, verbose_name="相册名称")

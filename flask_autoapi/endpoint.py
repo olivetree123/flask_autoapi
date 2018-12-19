@@ -1,12 +1,12 @@
-
 from flask import request
-from flask_restful import Resource
+from flask_restful import Resource, marshal_with
+from flask_autoapi.utils.response import APIResponse, resource_fields
 
 class BaseEndpoint(Resource):
 
     Model = None
     Type = "Single"
-    decorators = []
+    decorators = [marshal_with(resource_fields)]
 
     @classmethod
     def add_decorators(cls, decorator_list):
@@ -22,7 +22,7 @@ class BaseEndpoint(Resource):
 
         @apiExample DATA
         {% for field in Fields %}
-        {{ field.name }} {{field.field_type}} {% if field.help_text %} # {{field.help_text}} {% endif %}{% endfor %}
+        {{ field.name }} {{field.field_type}} {% if field.verbose_name %} # {{field.verbose_name}} {% endif %}{% endfor %}
 
         @apiExample 返回值
         code    int
@@ -30,21 +30,24 @@ class BaseEndpoint(Resource):
         data    DATA
 
         """
-        r = self.Model.get_with_uid(id)
+        r = self.Model.get_with_pk(id)
         r = r.to_json() if r else None
         return APIResponse(data=r)
     
     def post(self):
         """
-        @apiName 创建{{Title}}
+        @api {POST} /api/{{ModelName.lower()}} 创建{{Title}}详情
+        @apiName Create{{ModelName}}
         @apiGroup {{Group}}
 
+        @apiExample DATA
+        {% for field in Fields %}
+        {{ field.name }} {{field.field_type}} {% if field.verbose_name %} # {{field.verbose_name}} {% endif %}{% endfor %}
+
         @apiExample 返回值
-        {
-            "code": 0,
-            "message": null,
-            "data": {{Data}}
-        }
+        code    int
+        message string
+        data    DATA
         """
         params = request.get_json() if request.content_type == "application/json" else request.form.to_dict()
         file_obj = request.files.get("file")
@@ -61,18 +64,38 @@ class BaseEndpoint(Resource):
         return APIResponse(data=r)
     
     def put(self, id):
+        """
+        @api {PUT} /api/{{ModelName.lower()}}/:id 更新{{Title}}
+        @apiName Update{{ModelName}}
+        @apiGroup {{Group}}
+
+        @apiExample 参数
+        {% for field in Fields %}
+        {{ field.name }} {{field.field_type}} {% if field.verbose_name %} # {{field.verbose_name}} {% endif %}{% endfor %}
+
+        @apiExample DATA
+        {% for field in Fields %}
+        {{ field.name }} {{field.field_type}} {% if field.verbose_name %} # {{field.verbose_name}} {% endif %}{% endfor %}
+
+        @apiExample 返回值
+        code    int
+        message string
+        data    DATA
+
+        """
         params = request.get_json() if request.content_type == "application/json" else request.form.to_dict()
         if not params:
             return APIResponse(BAD_REQUEST)
         status = self.Model.verify_params(**params)
         if not status:
             return APIResponse(BAD_REQUEST)
-        r = self.Model.update_by_uid(id, **params)
+        r = self.Model.update_by_pk(id, **params)
         r = r.to_json() if r else None
         return APIResponse(data=r)
     
     def delete(self, id):
-        self.Model.remove(id)
+        # self.Model.remove(id)
+        self.Model.delete().where(self.Model._meta.primary_key == id).execute()
         return APIResponse()
 
 

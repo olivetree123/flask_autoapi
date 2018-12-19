@@ -1,1 +1,5 @@
+*.pyc
+static/
 __pycache__
+dist/
+flask_autoapi.egg-info/

@@ -1,16 +1,16 @@
 from peewee import Model, CharField
 from playhouse.shortcuts import model_to_dict
 
-from flask_autoapi.diyutils import field_to_json
+from flask_autoapi.utils.diyutils import field_to_json
 
 
 class ApiModel(Model):
     
     @classmethod
-    def get_with_id(cls, id):
+    def get_with_pk(cls, pk_value):
         if not id:
             return None
-        return cls.get_or_none(cls.primary_key == id)
+        return cls.get_or_none(cls._meta.primary_key == pk_value)
     
     @classmethod
     def get_field_names(cls):
@@ -62,12 +62,12 @@ class ApiModel(Model):
         return None
     
     @classmethod
-    def update_by_id(cls, id, **params):
+    def update_by_pk(cls, pk_value, **params):
         status = cls.verify_params(**params)
         if not status:
             return
         field_names = cls.get_field_names()
-        r = cls.get_with_id(id)
+        r = cls.get_with_pk(pk_value)
         for key, value in params.items():
             if not key in field_names or cls.get_field_by_name(key).primary_key:
                 continue

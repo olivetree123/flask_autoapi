@@ -1,7 +1,7 @@
 
 
+MYSQL_DB = "test"
 MYSQL_HOST = "localhost"
+MYSQL_PORT = 3306
 MYSQL_USER = "root"
 MYSQL_PASSWORD = "gaojian"
-MYSQL_PORT = 3306
-MYSQL_DB = "test"

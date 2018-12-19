@@ -1,8 +1,7 @@
 #coding:utf-8
 from peewee import CharField, BooleanField, IntegerField
-
 from flask_autoapi.model import FileIDField
-from models import BaseModel, UUIDField
+from models import BaseModel
 
 
 class Audio(BaseModel):

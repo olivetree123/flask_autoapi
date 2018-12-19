@@ -12,7 +12,7 @@ class AutoAPI(object):
         self.app = None
         self.model_list = None
         # doc_folder 位于 static 目录下
-        self.doc_folder = "doc"
+        self.doc_folder = "docs"
     
     def init_app(self, app, model_list):
         if not isinstance(model_list, (list, tuple)):
@@ -25,6 +25,7 @@ class AutoAPI(object):
         self.app.add_url_rule("/docs/", "docs", self._static_file, strict_slashes=True)
         self.app.add_url_rule("/docs/<path:path>", "docs", self._static_file, strict_slashes=True)
         self.auto_urls()
+        self.api.init_app(self.app)
     
     def _static_file(self, path=None):
         if not path:

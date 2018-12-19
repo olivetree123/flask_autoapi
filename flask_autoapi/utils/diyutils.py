@@ -1,4 +1,5 @@
 import uuid
+import hashlib
 from decimal import Decimal
 from datetime import datetime
 
@@ -25,3 +26,7 @@ def field_to_json(value, datetime_format=DATETIME_FORMAT):
     elif isinstance(value, Decimal):
         ret = float(ret)
     return ret
+
+def content_md5(content):
+    hash_md5 = hashlib.md5(content)
+    return hash_md5.hexdigest()

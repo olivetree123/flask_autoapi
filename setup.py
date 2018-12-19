@@ -56,7 +56,7 @@ AUTHOR_EMAIL = "olivetree123@163.com"
 作者的邮件地址
 """
  
-URL = ""
+URL = "https://github.com/olivetree123/flask_autoapi"
 """
 你这个包的项目地址，如果有，给一个吧，没有你直接填写在PyPI你这个包的地址也是可以的
 """

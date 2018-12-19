@@ -1,5 +1,6 @@
 from flask_restful import fields
-from utils.response import MESSAGE
+from flask_autoapi.utils.message import MESSAGE
+
 
 resource_fields = {
     "code" : fields.Integer,
@@ -15,3 +16,4 @@ class APIResponse(object):
         self.code = code
         self.message = message
         self.data = data
+

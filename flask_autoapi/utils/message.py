@@ -1,5 +1,3 @@
-#coding:utf-8
-
 BAD_REQUEST = 1000
 
 MESSAGE = {
