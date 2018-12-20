@@ -1,10 +1,16 @@
 from peewee import Model, CharField
 from playhouse.shortcuts import model_to_dict
 
+from flask_autoapi.utils.file import StoreConfig
 from flask_autoapi.utils.diyutils import field_to_json
 
 
 class ApiModel(Model):
+
+    @classmethod
+    def set_meta(cls, **kwargs):
+        for key, value in kwargs.items():
+            setattr(cls._meta, key, value)
     
     @classmethod
     def get_with_pk(cls, pk_value):
@@ -75,6 +81,20 @@ class ApiModel(Model):
         r.save()
         return r
     
+    @classmethod
+    def store_config(cls):
+        print("--- get store config ---")
+        return StoreConfig(
+            kind=cls._meta.file_store,
+            file_folder=cls._meta.file_folder,
+            minio_url=cls._meta.minio_url, 
+            minio_bucket=cls._meta.minio_bucket, 
+            minio_secure=cls._meta.minio_secure,
+            minio_access_key=cls._meta.minio_access_key, 
+            minio_secret_key=cls._meta.minio_secret_key,
+        )
+
+    
     def to_json(self, datetime_format="%Y-%m-%d %H:%M:%S"):
         r = model_to_dict(self)
         for k, v in r.items():
@@ -85,10 +105,19 @@ class ApiModel(Model):
         group = ""
         # verbose_name 指定别名，用于显示在 API 文档上。默认为 Model 的名称
         verbose_name = ""
-        # file_folder 指定文件存储路径
-        file_folder = ""
         # list_fields 用于指定 list 接口的参数
         list_fields = ()
+        # file_store 指定文件存储的方式，支持 file/minio
+        file_store = "file"
+        # file_folder 指定文件存储路径
+        file_folder = ""
+        # minio 配置
+        minio_url = ""
+        minio_bucket = ""
+        minio_secure = False
+        minio_access_key = ""
+        minio_secret_key = ""
+        
 
 
 class FileIDField(CharField):

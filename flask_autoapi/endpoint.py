@@ -1,6 +1,9 @@
 from flask import request
 from flask_restful import Resource, marshal_with
+
+from flask_autoapi.utils.file import save_file
 from flask_autoapi.utils.response import APIResponse, resource_fields
+from flask_autoapi.utils.message import BAD_REQUEST, OBJECT_SAVE_FAILED
 
 class BaseEndpoint(Resource):
 
@@ -53,7 +56,9 @@ class BaseEndpoint(Resource):
         file_obj = request.files.get("file")
         fileid_field_name = self.Model.get_fileid_field_name()
         if file_obj and fileid_field_name:
-            file_id, _ = save_file(file_obj, self.Model._meta.file_folder)
+            file_id = save_file(file_obj, self.Model.store_config())
+            if not file_id:
+                return APIResponse(code=OBJECT_SAVE_FAILED)
             params[fileid_field_name] = file_id
         status = self.Model.verify_params(**params)
         if not status:
