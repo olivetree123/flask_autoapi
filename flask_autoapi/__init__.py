@@ -14,7 +14,7 @@ class AutoAPI(object):
         # doc_folder 位于 static 目录下
         self.doc_folder = "docs"
     
-    def init_app(self, app, model_list):
+    def init_app(self, app, model_list, project_name=""):
         if not isinstance(model_list, (list, tuple)):
             raise Exception("model_list 应该是一个列表，不是{}".format(type(model_list)))
         for model in model_list:
@@ -22,9 +22,12 @@ class AutoAPI(object):
                 raise Exception("model 应该继承自 ApiModel")
         self.app = app
         self.model_list = model_list
+        self.project_name = project_name if project_name else os.getcwd().split("/")[-1]
+        if not self.project_name:
+            raise Exception("project_name 不能为空，需要使用 project_name 作为 URL 前缀")
         self.app.add_url_rule("/docs/", "docs", self._static_file, strict_slashes=True)
         self.app.add_url_rule("/docs/<path:path>", "docs", self._static_file, strict_slashes=True)
-        self.auto_urls()
+        self._auto_urls()
         self.api.init_app(self.app)
     
     def _static_file(self, path=None):
@@ -33,7 +36,7 @@ class AutoAPI(object):
         path = os.path.join(self.doc_folder, path)
         return self.app.send_static_file(path)
     
-    def auto_urls(self):
+    def _auto_urls(self):
         endpoints = []
         for model in self.model_list:
             class_name = model.__name__ + "Endpoint"
@@ -48,10 +51,10 @@ class AutoAPI(object):
         
         for endpoint in endpoints:
             if endpoint.Type.upper() == "LIST":
-                url = "/api/"+endpoint.Model.__name__.lower()+"/"+endpoint.Type.lower()+"/"
+                url = "/".join(["", self.project_name.lower(), endpoint.Model.__name__.lower(), endpoint.Type.lower(), ""])
                 self.api.add_resource(endpoint, url, strict_slashes=False)
             else:
-                url1 = "/api/"+endpoint.Model.__name__.lower()+"/"
+                url1 = "/".join(["", self.project_name.lower(), endpoint.Model.__name__.lower(), ""])
                 url2 = url1 + "<id>/"
                 self.api.add_resource(endpoint, url1, url2, strict_slashes=False)
 

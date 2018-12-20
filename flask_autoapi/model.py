@@ -83,8 +83,10 @@ class ApiModel(Model):
     
     class Meta:
         group = ""
-        # 指定别名，用于显示在 API 文档上。默认为 Model 的名称
+        # verbose_name 指定别名，用于显示在 API 文档上。默认为 Model 的名称
         verbose_name = ""
+        # file_folder 指定文件存储路径
+        file_folder = ""
         # list_fields 用于指定 list 接口的参数
         list_fields = ()
 

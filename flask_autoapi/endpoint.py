@@ -53,7 +53,7 @@ class BaseEndpoint(Resource):
         file_obj = request.files.get("file")
         fileid_field_name = self.Model.get_fileid_field_name()
         if file_obj and fileid_field_name:
-            file_id, _ = save_file(file_obj)
+            file_id, _ = save_file(file_obj, self.Model._meta.file_folder)
             params[fileid_field_name] = file_id
         status = self.Model.verify_params(**params)
         if not status:

@@ -18,7 +18,8 @@ class GenerateDoc(Command):
             BaseEndpoint.get.__doc__, 
             BaseEndpoint.post.__doc__, 
             BaseEndpoint.put.__doc__, 
-            BaseEndpoint.delete.__doc__
+            BaseEndpoint.delete.__doc__,
+            BaseListEndpoint.get.__doc__,
         ]
         f = open(os.path.join(self.static_folder, "doc.py"), "w+")
         for model in self.model_list:
