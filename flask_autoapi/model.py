@@ -53,7 +53,7 @@ class ApiModel(Model):
         # 验证 list 接口的参数
         result = {}
         for key, value in args.items():
-            if not key in cls.Model._meta.list_fields:
+            if not key in cls._meta.list_fields:
                 continue
             result[key] = value
         return result
@@ -62,7 +62,6 @@ class ApiModel(Model):
     def get_fileid_field_name(cls):
         fields = cls.get_fields()
         for field in fields:
-            print(field)
             if isinstance(field, FileIDField):
                 return field.name
         return None
@@ -83,15 +82,16 @@ class ApiModel(Model):
     
     @classmethod
     def store_config(cls):
-        print("--- get store config ---")
         return StoreConfig(
             kind=cls._meta.file_store,
-            file_folder=cls._meta.file_folder,
+            bucket=cls._meta.bucket,
             minio_url=cls._meta.minio_url, 
-            minio_bucket=cls._meta.minio_bucket, 
             minio_secure=cls._meta.minio_secure,
             minio_access_key=cls._meta.minio_access_key, 
             minio_secret_key=cls._meta.minio_secret_key,
+            qiniu_url = cls._meta.qiniu_url,
+            qiniu_access_key = cls._meta.qiniu_access_key,
+            qiniu_secret_key = cls._meta.qiniu_secret_key,
         )
 
     
@@ -109,14 +109,17 @@ class ApiModel(Model):
         list_fields = ()
         # file_store 指定文件存储的方式，支持 file/minio
         file_store = "file"
-        # file_folder 指定文件存储路径
-        file_folder = ""
+        # bucket 指定文件存储文件夹，或云存储的 bucket
+        bucket = ""
         # minio 配置
         minio_url = ""
-        minio_bucket = ""
         minio_secure = False
         minio_access_key = ""
         minio_secret_key = ""
+        # qiniu 配置
+        qiniu_url = ""
+        qiniu_access_key = ""
+        qiniu_secret_key = ""
         
 
 

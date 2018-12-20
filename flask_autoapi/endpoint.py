@@ -108,7 +108,7 @@ class BaseListEndpoint(Resource):
 
     Model = None
     Type = "List"
-    decorators = []
+    decorators = [marshal_with(resource_fields)]
 
     @classmethod
     def add_decorators(cls, decorator_list):
@@ -132,7 +132,7 @@ class BaseListEndpoint(Resource):
         args = self.Model.verify_list_args(**args)
         if not args:
             return APIResponse(BAD_REQUEST)
-        result = self.Model.list()
+        result = self.Model.select()
         for key, value in args.items():
             result = result.where(getattr(self.Model, key) == value)
         result = [r.to_json() for r in result] if result else None

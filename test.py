@@ -29,11 +29,11 @@ class Album(ApiModel):
         # 指定别名，用于显示在 API 文档上。默认为 Model 的名称
         verbose_name = "相册"
         # list_fields 用于指定 list 接口的参数
-        list_fields = ("dirname", )
+        list_fields = ("dirname", "name", )
 
         # 文件存储配置
-        file_store = "file"
-        file_folder = "/data/"
+        file_store = "qiniu"
+        bucket = "gaojian"
 
         # minio 配置
         # file_store = "minio"
@@ -41,6 +41,12 @@ class Album(ApiModel):
         # minio_bucket = ""
         # minio_access_key = ""
         # minio_secret_key = ""
+
+        # qiniu 配置
+        qiniu_url = ""
+        qiniu_access_key = ""
+        qiniu_secret_key = ""
+
 
 MODEL_LIST = [Album, ]
 db.create_tables(MODEL_LIST)

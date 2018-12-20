@@ -2,6 +2,7 @@ import os
 from flask_autoapi.utils.diyutils import content_md5
 
 from flask_autoapi.utils.minio import put_object
+from flask_autoapi.utils.qiniu import qiniu_put_object
 from flask_autoapi.entity.store_config import StoreConfig
 
 
@@ -19,3 +20,5 @@ def save_file(file_obj, store_config):
         return md5_hash
     elif store_config.kind == "minio":
         return put_object(file_obj, store_config)
+    elif store_config.kind == "qiniu":
+        return qiniu_put_object(file_obj, store_config)
