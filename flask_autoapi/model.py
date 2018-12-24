@@ -1,8 +1,11 @@
+import werkzeug
+from io import BytesIO
 from peewee import Model, CharField
 from playhouse.shortcuts import model_to_dict
 
-from flask_autoapi.utils.file import StoreConfig
-from flask_autoapi.utils.diyutils import field_to_json
+from flask_autoapi.entity.store_config import StoreConfig
+from flask_autoapi.utils.file import save_file
+from flask_autoapi.utils.diyutils import field_to_json, content_md5
 
 
 class ApiModel(Model):
@@ -35,6 +38,32 @@ class ApiModel(Model):
         if field_name in cls._meta.fields:
             return cls._meta.fields[field_name]
         return None
+
+    @classmethod
+    def format_params(cls, **params):
+        # 格式化参数，主要是将 str 转换成 file 对象
+        fields = cls.get_fields()
+        for field in fields:
+            if isinstance(field, FileIDField):
+                if field.source_type == "string":
+                    content = params.get(field.source_name)
+                    if not content:
+                        continue
+                    if not isinstance(content, (str, bytes)):
+                        raise Exception("{} 应该为 str 或 bytes，而不是 {}".format(field.name, type(content)))
+                    if isinstance(content, str):
+                        content = content.encode("utf8")
+                    f = BytesIO(content)
+                    setattr(f, "name", content_md5(content))
+                    params[field.name] = f
+                elif field.source_type == "file":
+                    f = params.get(field.source_name)
+                    if not isinstance(f, (werkzeug.datastructures.FileStorage, type(None))):
+                        raise Exception("类型错误，{} 应该为 werkzeug.datastructures.FileStorage 类型，而不是 {}".format(field.source_name, type(f)))
+                    params[field.name] = f
+                else:
+                    raise Exception("不能识别的类型, 无法转换，source_type = {}".format(field.source_type))
+        return params
     
     @classmethod
     def verify_params(cls, **params):
@@ -49,6 +78,17 @@ class ApiModel(Model):
         return True
     
     @classmethod
+    def upload_files(cls, **params):
+        fields = cls.get_fields()
+        for field in fields:
+            if not params.get(field.name):
+                continue
+            if isinstance(field, FileIDField):
+                file_id = save_file(params[field.name], cls.store_config())
+                params[field.name] = file_id
+        return params
+    
+    @classmethod
     def verify_list_args(cls, **args):
         # 验证 list 接口的参数
         result = {}
@@ -59,10 +99,10 @@ class ApiModel(Model):
         return result
     
     @classmethod
-    def get_fileid_field_name(cls):
+    def get_fileid_field_name(cls, **params):
         fields = cls.get_fields()
         for field in fields:
-            if isinstance(field, FileIDField):
+            if isinstance(field, FileIDField) and not params.get(field.name):
                 return field.name
         return None
     
@@ -93,6 +133,15 @@ class ApiModel(Model):
             qiniu_access_key = cls._meta.qiniu_access_key,
             qiniu_secret_key = cls._meta.qiniu_secret_key,
         )
+
+    @classmethod
+    def validate(cls, **params):
+        """
+        validate 用于验证参数
+        返回 True 表示正确；
+        返回 False 表示错误，会返回 BadRequest
+        """
+        return True
 
     
     def to_json(self, datetime_format="%Y-%m-%d %H:%M:%S"):
@@ -125,4 +174,7 @@ class ApiModel(Model):
 
 class FileIDField(CharField):
     # field_kind = "FILE_ID"
-    pass
+    def __init__(self, max_length=255, *args, **kwargs):
+        self.source_name = kwargs.pop("source_name", "file")
+        self.source_type = kwargs.pop("source_type", "file")
+        super(FileIDField, self).__init__(max_length=max_length, *args, **kwargs)

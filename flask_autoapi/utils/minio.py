@@ -1,3 +1,4 @@
+import os
 from minio import Minio
 from minio.error import ResponseError
 
@@ -14,7 +15,10 @@ def put_object(file_obj, store_config):
                         secret_key=store_config.minio_secret_key,
                         secure=store_config.minio_secure
         )
-        etag = client.put_object(store_config.minio_bucket, file_obj.name, file_obj, 1024)
+        file_obj.seek(0, os.SEEK_END)
+        length = file_obj.tell()
+        file_obj.seek(0, os.SEEK_SET)
+        etag = client.put_object(store_config.bucket, file_obj.name, file_obj, length)
     except Exception as e:
         print("上传文件到minio 失败，{}".format(e))
     return etag
