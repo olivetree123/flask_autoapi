@@ -3,8 +3,7 @@ from io import BytesIO
 from peewee import Model, CharField
 from playhouse.shortcuts import model_to_dict
 
-from flask_autoapi.entity.store_config import StoreConfig
-from flask_autoapi.utils.file import save_file
+from flask_autoapi.storage import Storage
 from flask_autoapi.utils.diyutils import field_to_json, content_md5
 
 
@@ -54,7 +53,8 @@ class ApiModel(Model):
                     if isinstance(content, str):
                         content = content.encode("utf8")
                     f = BytesIO(content)
-                    setattr(f, "name", content_md5(content))
+                    setattr(f, "md5_hash", content_md5(content))
+                    setattr(f, "length", len(content))
                     params[field.name] = f
                 elif field.source_type == "file":
                     f = params.get(field.source_name)
@@ -79,12 +79,13 @@ class ApiModel(Model):
     
     @classmethod
     def upload_files(cls, **params):
+        cls.init_storage()
         fields = cls.get_fields()
         for field in fields:
             if not params.get(field.name):
                 continue
             if isinstance(field, FileIDField):
-                file_id = save_file(params[field.name], cls.store_config())
+                file_id = cls.storage.write(params[field.name])
                 params[field.name] = file_id
         return params
     
@@ -121,9 +122,9 @@ class ApiModel(Model):
         return r
     
     @classmethod
-    def store_config(cls):
-        return StoreConfig(
-            kind=cls._meta.file_store,
+    def init_storage(cls):
+        storage = Storage(
+            kind=cls._meta.store_kind,
             bucket=cls._meta.bucket,
             minio_url=cls._meta.minio_url, 
             minio_secure=cls._meta.minio_secure,
@@ -132,7 +133,9 @@ class ApiModel(Model):
             qiniu_url = cls._meta.qiniu_url,
             qiniu_access_key = cls._meta.qiniu_access_key,
             qiniu_secret_key = cls._meta.qiniu_secret_key,
+            qiniu_bucket_url = cls._meta.qiniu_bucket_url,
         )
+        setattr(cls, "storage", storage)
 
     @classmethod
     def validate(cls, **params):
@@ -143,9 +146,15 @@ class ApiModel(Model):
         """
         return True
 
-    
-    def to_json(self, datetime_format="%Y-%m-%d %H:%M:%S"):
-        r = model_to_dict(self)
+    @classmethod
+    def to_json(cls, obj, datetime_format="%Y-%m-%d %H:%M:%S"):
+        fields = cls.get_fields()
+        for field in fields:
+            # 如果数据源为 string，则返回时也应该返回 string
+            if field.field_type == "FILE_ID" and field.source_type == "string":
+                content = cls.storage.read(getattr(obj, field.name))
+                setattr(obj, field.name, content)
+        r = model_to_dict(obj)
         for k, v in r.items():
             r[k] = field_to_json(v, datetime_format)
         return r
@@ -156,8 +165,8 @@ class ApiModel(Model):
         verbose_name = ""
         # list_fields 用于指定 list 接口的参数
         list_fields = ()
-        # file_store 指定文件存储的方式，支持 file/minio
-        file_store = "file"
+        # store_kind 指定文件存储的方式，支持 file/minio/qiniu
+        store_kind = "file"
         # bucket 指定文件存储文件夹，或云存储的 bucket
         bucket = ""
         # minio 配置
@@ -169,12 +178,15 @@ class ApiModel(Model):
         qiniu_url = ""
         qiniu_access_key = ""
         qiniu_secret_key = ""
+        qiniu_bucket_url = ""
         
 
 
 class FileIDField(CharField):
-    # field_kind = "FILE_ID"
+    field_type = "FILE_ID"
+
     def __init__(self, max_length=255, *args, **kwargs):
         self.source_name = kwargs.pop("source_name", "file")
         self.source_type = kwargs.pop("source_type", "file")
         super(FileIDField, self).__init__(max_length=max_length, *args, **kwargs)
+

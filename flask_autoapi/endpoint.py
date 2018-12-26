@@ -1,8 +1,6 @@
 from flask import request
 from flask_restful import Resource, marshal_with
 
-from flask_autoapi.utils.file import save_file
-# from flask_autoapi.utils.filter import standard_type
 from flask_autoapi.utils.response import APIResponse, resource_fields
 from flask_autoapi.utils.message import BAD_REQUEST, OBJECT_SAVE_FAILED
 
@@ -35,7 +33,7 @@ class BaseEndpoint(Resource):
 
         """
         r = self.Model.get_with_pk(id)
-        r = r.to_json() if r else None
+        r = self.Model.to_json(r) if r else None
         return APIResponse(data=r)
     
     def post(self):
@@ -69,7 +67,7 @@ class BaseEndpoint(Resource):
             return APIResponse(BAD_REQUEST)
         r = self.Model.create(**params)
         r.save()
-        r = r.to_json() if r else None
+        r = self.Model.to_json(r) if r else None
         return APIResponse(data=r)
     
     def put(self, id):
@@ -103,7 +101,7 @@ class BaseEndpoint(Resource):
         if not self.Model.validate(**params):
             return APIResponse(BAD_REQUEST)
         r = self.Model.update_by_pk(id, **params)
-        r = r.to_json() if r else None
+        r = self.Model.to_json(r) if r else None
         return APIResponse(data=r)
     
     def delete(self, id):
@@ -160,5 +158,5 @@ class BaseListEndpoint(Resource):
         result = self.Model.select()
         for key, value in args.items():
             result = result.where(getattr(self.Model, key) == value)
-        result = [r.to_json() for r in result] if result else None
+        result = [self.Model.to_json(r) for r in result] if result else None
         return APIResponse(data=result)
