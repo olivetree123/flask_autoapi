@@ -13,6 +13,7 @@ class AutoAPI(object):
         self.model_list = None
         # doc_folder 位于 static 目录下
         self.doc_folder = "docs"
+        self._lazy_resources = []
     
     def init_app(self, app, model_list, project_name=""):
         if not isinstance(model_list, (list, tuple)):
@@ -29,6 +30,26 @@ class AutoAPI(object):
         self.app.add_url_rule("/docs/<path:path>", "docs", self._static_file, strict_slashes=True)
         self._auto_urls()
         self.api.init_app(self.app)
+        for data in self._lazy_resources:
+            self.update_resource(data[0], data[1])
+    
+    def update_resource(self, resource, *urls):
+        if self.app:
+            endpoint = resource.__name__.lower()
+            func = self.api.output(resource.as_view(endpoint))
+            self._del_exists_endpoint(endpoint)
+            for url in urls:
+                self.app.add_url_rule(url, endpoint, func)
+        else:
+            self._lazy_resources.append((resource, *urls))
+    
+    def _del_exists_endpoint(self, endpoint):
+        if self.app.view_functions.get(endpoint):
+            del self.app.view_functions[endpoint]
+        for i in range(len(self.app.url_map._rules)):
+            if self.app.url_map._rules[i].endpoint == endpoint:
+                del self.app.url_map._rules[i]
+                break
     
     def _static_file(self, path=None):
         if not path:
@@ -50,13 +71,13 @@ class AutoAPI(object):
             endpoints.append(endpoint)
         
         for endpoint in endpoints:
-            if endpoint.Type.upper() == "LIST":
+            if endpoint.Type:
                 url = "/".join(["", self.project_name.lower(), endpoint.Model.__name__.lower(), endpoint.Type.lower(), ""])
-                self.api.add_resource(endpoint, url, strict_slashes=False)
+                self.api.add_resource(endpoint, url, endpoint=endpoint.__name__.lower(), strict_slashes=False)
             else:
                 url1 = "/".join(["", self.project_name.lower(), endpoint.Model.__name__.lower(), ""])
                 url2 = url1 + "<id>/"
-                self.api.add_resource(endpoint, url1, url2, strict_slashes=False)
+                self.api.add_resource(endpoint, url1, url2, endpoint=endpoint.__name__.lower(), strict_slashes=False)
 
 
 

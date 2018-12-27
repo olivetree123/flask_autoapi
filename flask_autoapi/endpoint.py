@@ -7,7 +7,7 @@ from flask_autoapi.utils.message import BAD_REQUEST, OBJECT_SAVE_FAILED
 class BaseEndpoint(Resource):
 
     Model = None
-    Type = "Single"
+    Type = None
     decorators = [marshal_with(resource_fields)]
 
     @classmethod
