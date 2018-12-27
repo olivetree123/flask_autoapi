@@ -20,7 +20,7 @@ def read(fname):
     return codecs.open(os.path.join(os.path.dirname(__file__), fname)).read()
  
  
- 
+
 NAME = "flask_autoapi"
 """
 名字，一般放你包的名字即可
@@ -61,7 +61,7 @@ URL = "https://github.com/olivetree123/flask_autoapi"
 你这个包的项目地址，如果有，给一个吧，没有你直接填写在PyPI你这个包的地址也是可以的
 """
  
-VERSION = "0.3"
+VERSION = "0.7"
 """
 当前包的版本，这个按你自己需要的版本控制方式来
 """
