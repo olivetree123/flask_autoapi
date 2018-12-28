@@ -26,7 +26,7 @@ NAME = "flask_autoapi"
 名字，一般放你包的名字即可
 """
  
-PACKAGES = ["flask_autoapi",]
+PACKAGES = ["flask_autoapi", "flask_autoapi.storage", "flask_autoapi.utils"]
 """
 包含的包，可以多个，这是一个列表
 """
@@ -61,7 +61,7 @@ URL = "https://github.com/olivetree123/flask_autoapi"
 你这个包的项目地址，如果有，给一个吧，没有你直接填写在PyPI你这个包的地址也是可以的
 """
  
-VERSION = "0.7"
+VERSION = "0.7.3"
 """
 当前包的版本，这个按你自己需要的版本控制方式来
 """

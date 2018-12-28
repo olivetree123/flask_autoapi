@@ -151,7 +151,7 @@ class ApiModel(Model):
         fields = cls.get_fields()
         for field in fields:
             # 如果数据源为 string，则返回时也应该返回 string
-            if field.field_type == "FILE_ID" and field.source_type == "string":
+            if hasattr(field, "source_type") and field.source_type == "string":
                 content = cls.storage.read(getattr(obj, field.name))
                 setattr(obj, field.name, content)
         r = model_to_dict(obj)
@@ -183,7 +183,7 @@ class ApiModel(Model):
 
 
 class FileIDField(CharField):
-    field_type = "FILE_ID"
+    # field_type = "FILE_ID"
 
     def __init__(self, max_length=255, *args, **kwargs):
         self.source_name = kwargs.pop("source_name", "file")

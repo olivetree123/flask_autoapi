@@ -38,7 +38,7 @@ class BaseEndpoint(Resource):
     
     def post(self):
         """
-        @api {POST} /{{project_name}}/{{ModelName.lower()}} 创建{{Title}}详情
+        @api {POST} /{{project_name}}/{{ModelName.lower()}} 创建{{Title}}
         @apiName Create{{ModelName}}
         @apiGroup {{Group}}
 

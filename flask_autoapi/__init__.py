@@ -46,10 +46,10 @@ class AutoAPI(object):
     def _del_exists_endpoint(self, endpoint):
         if self.app.view_functions.get(endpoint):
             del self.app.view_functions[endpoint]
-        for i in range(len(self.app.url_map._rules)):
-            if self.app.url_map._rules[i].endpoint == endpoint:
-                del self.app.url_map._rules[i]
-                break
+            for i in range(len(self.app.url_map._rules)):
+                if self.app.url_map._rules[i].endpoint == endpoint:
+                    del self.app.url_map._rules[i]
+                    break
     
     def _static_file(self, path=None):
         if not path:
@@ -78,7 +78,5 @@ class AutoAPI(object):
                 url1 = "/".join(["", self.project_name.lower(), endpoint.Model.__name__.lower(), ""])
                 url2 = url1 + "<id>/"
                 self.api.add_resource(endpoint, url1, url2, endpoint=endpoint.__name__.lower(), strict_slashes=False)
-
-
 
         

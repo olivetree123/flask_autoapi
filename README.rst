@@ -15,4 +15,4 @@ API 接口基于 flask_restful 和 peewee，文档使用 ApiDoc 生成。
 
 TODO:
 1. 存储分离出去
-2. EndPiont 重载
+2. EndPiont 重载    √
