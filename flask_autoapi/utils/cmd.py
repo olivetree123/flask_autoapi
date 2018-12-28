@@ -29,4 +29,4 @@ class Cmd(object):
             print("Command Failed: {}, ERROR_INFO: {}".format(self.cmd_line, err))
         return Result(out, err, status_code)
 
-sys_apidoc = Cmd("/usr/local/bin/apidoc")
+sys_apidoc = Cmd("apidoc")
