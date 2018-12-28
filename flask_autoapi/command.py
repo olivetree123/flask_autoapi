@@ -25,7 +25,7 @@ class GenerateDoc(Command):
         ]
         f = open(os.path.join(self.static_folder, "doc.py"), "w+")
         for model in self.model_list:
-            fields = model.get_fields()
+            fields = model.get_display_fields()
             for doc in docs:
                 if not doc:
                     print("No doc")

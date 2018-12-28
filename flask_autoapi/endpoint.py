@@ -32,8 +32,10 @@ class BaseEndpoint(Resource):
         }
 
         """
-        r = self.Model.get_with_pk(id)
-        r = self.Model.to_json(r) if r else None
+        without_fields = request.args.get("without_fields")
+        without_fields = without_fields.split(",") if without_fields else None
+        r = self.Model.get_with_pk(id, without_fields)
+        r = self.Model.to_json(r, without_fields) if r else None
         return APIResponse(data=r)
     
     def post(self):
@@ -43,9 +45,9 @@ class BaseEndpoint(Resource):
         @apiGroup {{Group}}
 
         @apiExample 参数
-        {% for field in Fields %}
+        {%- for field in Fields %}
         {{ str_align(standard_type(field.field_type))}} \t {{ str_align(field.name, 15) }}  # {% if field.null is sameas true %} 非必填项 {% else %} 必填项 {% endif %} {% if field.verbose_name %}, {{field.verbose_name}} {% endif %}{% endfor %}
-
+        
 
         @apiExample 返回值
         {
@@ -77,9 +79,8 @@ class BaseEndpoint(Resource):
         @apiGroup {{Group}}
 
         @apiExample 参数
-        {% for field in Fields %}
+        {%- for field in Fields %}
         {{ str_align(standard_type(field.field_type))}} \t {{ str_align(field.name, 15) }}  # {% if field.null is sameas true %} 非必填项 {% else %} 必填项 {% endif %} {% if field.verbose_name %}, {{field.verbose_name}} {% endif %}{% endfor %}
-
 
         @apiExample 返回值
         {
@@ -153,10 +154,16 @@ class BaseListEndpoint(Resource):
         """
         args = request.args.to_dict()
         args = self.Model.verify_list_args(**args)
-        if not args:
-            return APIResponse(BAD_REQUEST)
-        result = self.Model.select()
+        # if not args:
+        #     return APIResponse(BAD_REQUEST)
+        without_fields = request.args.get("without_fields")
+        without_fields = without_fields.split(",") if without_fields else None
+        fields = self.Model.get_fields()
+        fields = [field for field in fields if field.name not in without_fields] \
+                    if without_fields else fields
+        result = self.Model.select(*fields)
         for key, value in args.items():
             result = result.where(getattr(self.Model, key) == value)
-        result = [self.Model.to_json(r) for r in result] if result else None
+        result = [self.Model.to_json(r, without_fields) for r in result] if result else None
         return APIResponse(data=result)
+        
