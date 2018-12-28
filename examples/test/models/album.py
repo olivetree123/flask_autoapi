@@ -13,5 +13,5 @@ class Album(BaseModel):
         group = "Album"
         # 指定别名，用于显示在 API 文档上。默认为 Model 的名称
         verbose_name = "相册"
-        # list_fields 用于指定 list 接口的参数
-        list_fields = ("dirname", )
+        # filter_fields 用于指定 list 接口的参数
+        filter_fields = ("dirname", )

@@ -28,8 +28,8 @@ class Album(ApiModel):
         group = "Album"
         # 指定别名，用于显示在 API 文档上。默认为 Model 的名称
         verbose_name = "相册"
-        # list_fields 用于指定 list 接口的参数
-        list_fields = ("dirname", "name", )
+        # filter_fields 用于指定 list 接口的参数
+        filter_fields = ("dirname", "name", )
 
         # 文件存储配置
         file_store = "qiniu"

@@ -12,7 +12,14 @@ API 接口基于 flask_restful 和 peewee，文档使用 ApiDoc 生成。
     
     pip install flask-autoapi
 
+    
 
-TODO:
-1. 存储分离出去
-2. EndPiont 重载    √
+
+TODO  
+=============
+1. 存储分离出去  
+2. EndPiont 重载    √  
+3. 允许修改字段的值  
+4. 返回时过滤掉不需要的字段     √  
+5. 有些字段不需要出现在文档上   √  
+6. MethodField  
