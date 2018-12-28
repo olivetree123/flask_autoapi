@@ -32,20 +32,21 @@ class Album(ApiModel):
         filter_fields = ("dirname", "name", )
 
         # 文件存储配置
-        file_store = "qiniu"
+        store_kind = "qiniu"
         bucket = "gaojian"
 
         # minio 配置
-        # file_store = "minio"
+        # store_kind = "minio"
         # minio_url = ""
         # minio_bucket = ""
         # minio_access_key = ""
         # minio_secret_key = ""
 
         # qiniu 配置
-        qiniu_url = ""
-        qiniu_access_key = ""
-        qiniu_secret_key = ""
+        # store_kind = "qiniu"
+        # qiniu_url = ""
+        # qiniu_access_key = ""
+        # qiniu_secret_key = ""
 
 
 MODEL_LIST = [Album, ]
