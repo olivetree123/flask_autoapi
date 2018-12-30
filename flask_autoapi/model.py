@@ -48,6 +48,26 @@ class ApiModel(Model):
         return None
 
     @classmethod
+    def in_handlers(cls, **params):
+        # 对原始的参数进行处理
+        fields = cls.get_fields()
+        for field in fields:
+            if not hasattr(field, "in_handler"):
+                continue
+            params[field.name] = field.in_handler(params.get(field.name))
+        return params
+    
+    @classmethod
+    def out_handlers(cls, **data):
+        # 对 to_json() 之后的结果进行处理
+        fields = cls.get_fields()
+        for field in fields:
+            if not hasattr(field, "out_handler"):
+                continue
+            data[field.name] = field.out_handler(data.get(field.name))
+        return data
+
+    @classmethod
     def format_params(cls, **params):
         # 格式化参数，主要是将 str 转换成 file 对象
         fields = cls.get_fields()
@@ -154,6 +174,14 @@ class ApiModel(Model):
         返回 False 表示错误，会返回 BadRequest
         """
         return True
+    
+    @classmethod
+    def diy_before_save(cls, **params):
+        """
+        用于 POST/PUT 方法。
+        做一些自定义操作，但是不能修改参数。
+        """
+        return True
 
     @classmethod
     def to_json(cls, obj, without_fields=None, datetime_format="%Y-%m-%d %H:%M:%S"):
@@ -195,11 +223,22 @@ class ApiModel(Model):
         
 
 
-class FileIDField(CharField):
+class ApiFileIDField(CharField):
     # field_type = "FILE_ID"
 
     def __init__(self, max_length=255, *args, **kwargs):
         self.source_name = kwargs.pop("source_name", "file")
         self.source_type = kwargs.pop("source_type", "file")
-        super(FileIDField, self).__init__(max_length=max_length, *args, **kwargs)
+        super(ApiFileIDField, self).__init__(max_length=max_length, *args, **kwargs)
 
+
+class ApiCharField(CharField):
+
+    def __init__(self, max_length=255, *args, **kwargs):
+        self.in_handler  = kwargs.pop("in_handler", None)
+        self.out_handler = kwargs.pop("out_handler", None)
+        if not isinstance(in_handler, types.FunctionType):
+            raise Exception("in_handler should be function, but {} found.".format(type(in_handler)))
+        if not isinstance(out_handler, types.FunctionType):
+            raise Exception("out_handler should be function, but {} found.".format(type(out_handler)))
+        super(ApiCharField, self).__init__(max_length=max_length, *args, **kwargs)

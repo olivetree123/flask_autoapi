@@ -23,6 +23,11 @@ class Album(ApiModel):
     dirname   = CharField(null=True, verbose_name="存储目录")
     file_id   = FileIDField(null=True)
 
+    @staticmethod
+    def name_in_hander(content):
+        return content+"gaojian"
+
+
     class Meta:
         database = db
         group = "Album"

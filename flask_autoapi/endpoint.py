@@ -36,6 +36,7 @@ class BaseEndpoint(Resource):
         without_fields = without_fields.split(",") if without_fields else None
         r = self.Model.get_with_pk(id, without_fields)
         r = self.Model.to_json(r, without_fields) if r else None
+        r = self.Model.out_handlers(**r)
         return APIResponse(data=r)
     
     def post(self):
@@ -60,6 +61,7 @@ class BaseEndpoint(Resource):
         """
         params = request.get_json() if request.content_type == "application/json" else request.form.to_dict()
         params.update(request.files.to_dict())
+        params = self.Model.in_handlers(**params)
         params = self.Model.format_params(**params)
         status = self.Model.verify_params(**params)
         if not status:
@@ -67,9 +69,11 @@ class BaseEndpoint(Resource):
         params = self.Model.upload_files(**params)
         if not self.Model.validate(**params):
             return APIResponse(BAD_REQUEST)
+        self.Model.diy_before_save(**params)
         r = self.Model.create(**params)
         r.save()
         r = self.Model.to_json(r) if r else None
+        r = self.Model.out_handlers(**r)
         return APIResponse(data=r)
     
     def put(self, id):
@@ -94,6 +98,7 @@ class BaseEndpoint(Resource):
         """
         params = request.get_json() if request.content_type == "application/json" else request.form.to_dict()
         params.update(request.files.to_dict())
+        params = self.Model.in_handlers(**params)
         params = self.Model.format_params(**params)
         status = self.Model.verify_params(**params)
         if not status:
@@ -101,8 +106,10 @@ class BaseEndpoint(Resource):
         params = self.Model.upload_files(**params)
         if not self.Model.validate(**params):
             return APIResponse(BAD_REQUEST)
+        self.Model.diy_before_save(**params)
         r = self.Model.update_by_pk(id, **params)
         r = self.Model.to_json(r) if r else None
+        r = self.Model.out_handlers(**r)
         return APIResponse(data=r)
     
     def delete(self, id):
@@ -137,9 +144,14 @@ class BaseListEndpoint(Resource):
 
     def get(self):
         """
-        @api {GET} /{{project_name}}/{{ModelName.lower()}}/list 获取{{Title}}列表
+        @api {GET} /{{project_name}}/{{ModelName.lower()}}/list?page=2&num=10&order=0 获取{{Title}}列表
         @apiName Get{{ModelName}}List
         @apiGroup {{Group}}
+
+        @apiExample 参数
+        int    page    # 页码。非必填，默认1。
+        int    num     # 每页数量。非必填，默认10。
+        int    order   # 排序方法。非必填，默认0。0表示按时间倒序，1表示按时间顺序。
 
         @apiExample 返回值
         {
@@ -156,6 +168,14 @@ class BaseListEndpoint(Resource):
         args = self.Model.verify_list_args(**args)
         # if not args:
         #     return APIResponse(BAD_REQUEST)
+        try:
+            page  = int(args.get("page", 1))
+            num   = int(args.get("num", 1))
+            order = int(args.get("order", 0))
+        except:
+            return APIResponse(BAD_REQUEST)
+        if not order in (0, 1):
+            return APIResponse(BAD_REQUEST)
         without_fields = request.args.get("without_fields")
         without_fields = without_fields.split(",") if without_fields else None
         fields = self.Model.get_fields()
@@ -164,6 +184,9 @@ class BaseListEndpoint(Resource):
         result = self.Model.select(*fields)
         for key, value in args.items():
             result = result.where(getattr(self.Model, key) == value)
+        result = result.order_by(self.Model.create_time.desc()) if order == 0 else result.order_by(self.Model.create_time.asc())
+        result = result.offset((page-1)*num).limit(num)
         result = [self.Model.to_json(r, without_fields) for r in result] if result else None
+        result = [self.Model.out_handlers(r) for r in result]
         return APIResponse(data=result)
         
