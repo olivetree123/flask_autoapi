@@ -72,6 +72,7 @@ class BaseEndpoint(Resource):
         self.Model.diy_before_save(**params)
         r = self.Model.create(**params)
         r.save()
+        r.mtom(**params)
         r = self.Model.to_json(r) if r else None
         r = self.Model.out_handlers(**r)
         return APIResponse(data=r)
@@ -108,6 +109,7 @@ class BaseEndpoint(Resource):
             return APIResponse(BAD_REQUEST)
         self.Model.diy_before_save(**params)
         r = self.Model.update_by_pk(id, **params)
+        r.mtom(**params)
         r = self.Model.to_json(r) if r else None
         r = self.Model.out_handlers(**r)
         return APIResponse(data=r)
@@ -166,11 +168,9 @@ class BaseListEndpoint(Resource):
         """
         args = request.args.to_dict()
         args = self.Model.verify_list_args(**args)
-        # if not args:
-        #     return APIResponse(BAD_REQUEST)
         try:
             page  = int(args.get("page", 1))
-            num   = int(args.get("num", 1))
+            num   = int(args.get("num", 10))
             order = int(args.get("order", 0))
         except:
             return APIResponse(BAD_REQUEST)
@@ -187,6 +187,6 @@ class BaseListEndpoint(Resource):
         result = result.order_by(self.Model.create_time.desc()) if order == 0 else result.order_by(self.Model.create_time.asc())
         result = result.offset((page-1)*num).limit(num)
         result = [self.Model.to_json(r, without_fields) for r in result] if result else None
-        result = [self.Model.out_handlers(r) for r in result]
+        result = [self.Model.out_handlers(**r) for r in result]
         return APIResponse(data=result)
         

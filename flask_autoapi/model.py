@@ -1,6 +1,7 @@
+import types
 import werkzeug
 from io import BytesIO
-from peewee import Model, CharField
+from peewee import Model, CharField, ManyToManyField, ForeignKeyField
 from playhouse.shortcuts import model_to_dict
 
 from flask_autoapi.storage import Storage
@@ -50,21 +51,41 @@ class ApiModel(Model):
     @classmethod
     def in_handlers(cls, **params):
         # 对原始的参数进行处理
-        fields = cls.get_fields()
+        fields = cls.get_fields() + list(cls._meta.manytomany.values())
         for field in fields:
             if not hasattr(field, "in_handler"):
                 continue
-            params[field.name] = field.in_handler(params.get(field.name))
+            handler = getattr(cls, field.in_handler)
+            if not (handler and isinstance(handler, types.MethodType)):
+                raise Exception("in_handler should be function, but {} found.".format(type(handler)))
+            params[field.name] = handler(params.get(field.name))
+            if field.name in cls._meta.manytomany:
+                params[field.name+"_value"] = params.pop(field.name)
         return params
+    
+    def mtom(self, **params):
+        for field_name, field in self._meta.manytomany.items():
+            ins = getattr(self, field_name)
+            ins.clear()
+            value = params[field_name+"_value"]
+            if isinstance(value, (list, tuple)):
+                for v in value:
+                    ins.add(v)
+            else:
+                ins.add(value)
     
     @classmethod
     def out_handlers(cls, **data):
         # 对 to_json() 之后的结果进行处理
-        fields = cls.get_fields()
+        fields = cls.get_fields() + list(cls._meta.manytomany.values())
         for field in fields:
-            if not hasattr(field, "out_handler"):
+            if not (hasattr(field, "out_handler") and getattr(field, "out_handler")):
                 continue
-            data[field.name] = field.out_handler(data.get(field.name))
+            print("field_name = {}, out_handler = {}".format(field.name, field.out_handler))
+            handler = getattr(cls, field.out_handler)
+            if not (handler and isinstance(handler, types.MethodType)):
+                raise Exception("out_handler should be function, but {} found.".format(type(handler)))
+            data[field.name] = handler(data.get(field.name))
         return data
 
     @classmethod
@@ -72,7 +93,7 @@ class ApiModel(Model):
         # 格式化参数，主要是将 str 转换成 file 对象
         fields = cls.get_fields()
         for field in fields:
-            if isinstance(field, FileIDField):
+            if isinstance(field, ApiFileIDField):
                 if field.source_type == "string":
                     content = params.get(field.source_name)
                     if not content:
@@ -113,7 +134,7 @@ class ApiModel(Model):
         for field in fields:
             if not params.get(field.name):
                 continue
-            if isinstance(field, FileIDField):
+            if isinstance(field, ApiFileIDField):
                 file_id = cls.storage.write(params[field.name])
                 params[field.name] = file_id
         return params
@@ -132,7 +153,7 @@ class ApiModel(Model):
     def get_fileid_field_name(cls, **params):
         fields = cls.get_fields()
         for field in fields:
-            if isinstance(field, FileIDField) and not params.get(field.name):
+            if isinstance(field, ApiFileIDField) and not params.get(field.name):
                 return field.name
         return None
     
@@ -191,8 +212,12 @@ class ApiModel(Model):
             if hasattr(field, "source_type") and field.source_type == "string" and getattr(obj, field.name):
                 content = cls.storage.read(getattr(obj, field.name))
                 setattr(obj, field.name, content)
-        r = model_to_dict(obj)
-        # r = obj.__data__
+        # to json
+        r = model_to_dict(obj, manytomany=cls._meta.manytomany)
+        # 将 many-to-many 的数据取出来
+        # for field_name, field in cls._meta.manytomany.items():
+        #     r[field_name] = [model_to_dict(x) for x in getattr(obj, field_name)]
+        # 过滤掉不需要的字段
         result = {}
         for k, v in r.items():
             if without_fields and k in without_fields:
@@ -237,8 +262,47 @@ class ApiCharField(CharField):
     def __init__(self, max_length=255, *args, **kwargs):
         self.in_handler  = kwargs.pop("in_handler", None)
         self.out_handler = kwargs.pop("out_handler", None)
-        if not isinstance(in_handler, types.FunctionType):
-            raise Exception("in_handler should be function, but {} found.".format(type(in_handler)))
-        if not isinstance(out_handler, types.FunctionType):
-            raise Exception("out_handler should be function, but {} found.".format(type(out_handler)))
+        # if self.in_handler and not isinstance(self.in_handler, types.FunctionType):
+        #     raise Exception("in_handler should be function, but {} found.".format(type(self.in_handler)))
+        # if self.out_handler and not isinstance(self.out_handler, types.FunctionType):
+        #     raise Exception("out_handler should be function, but {} found.".format(type(self.out_handler)))
         super(ApiCharField, self).__init__(max_length=max_length, *args, **kwargs)
+
+
+class ApiManyToManyField(ManyToManyField):
+
+    def __init__(self, model, **kwargs):
+        self.in_handler  = kwargs.pop("in_handler", None)
+        self.out_handler = kwargs.pop("out_handler", None)
+        # if self.in_handler and not isinstance(self.in_handler, types.FunctionType):
+        #     raise Exception("in_handler should be function, but {} found.".format(type(self.in_handler)))
+        # if self.out_handler and not isinstance(self.out_handler, types.FunctionType):
+        #     raise Exception("out_handler should be function, but {} found.".format(type(self.out_handler)))
+        super(ApiManyToManyField, self).__init__(model, **kwargs)
+    
+    def get_through_model(self):
+        if not self.through_model:
+            lhs, rhs = self.get_models()
+            tables = [model._meta.table_name for model in (lhs, rhs)]
+
+            class Meta:
+                database = self.model._meta.database
+                schema = self.model._meta.schema
+                table_name = '%s_%s_through' % tuple(tables)
+                indexes = (
+                    ((lhs._meta.name, rhs._meta.name),
+                     True),)
+
+            attrs = {
+                lhs._meta.name: ForeignKeyField(lhs, on_delete=self._on_delete,
+                                                on_update=self._on_update),
+                rhs._meta.name: ForeignKeyField(rhs, on_delete=self._on_delete,
+                                                on_update=self._on_update)}
+            attrs['Meta'] = Meta
+
+            self.through_model = type(
+                '%s%sThrough' % (lhs.__name__, rhs.__name__),
+                (ApiModel,),
+                attrs)
+
+        return self.through_model
