@@ -2,11 +2,49 @@ import uuid
 import types
 import werkzeug
 from io import BytesIO
-from peewee import Model, CharField, ManyToManyField, ForeignKeyField, Field
 from playhouse.shortcuts import model_to_dict
+from peewee import Model, CharField, ManyToManyField, ForeignKeyField, Field, FieldAccessor, MetaField, Metadata
 
 from flask_autoapi.storage import Storage
 from flask_autoapi.utils.diyutils import field_to_json, content_md5
+
+
+def api_model_to_dict(obj, **kwargs):
+    data = model_to_dict(obj, **kwargs)
+    method_fields = list(obj._meta.method_fields.values())
+    for field in method_fields:
+        data[field.name] = getattr(obj, field.name)
+    return data
+
+
+class ApiMethodField(MetaField):
+    """
+    A readonly field, get value by object method.
+    """
+    field_type = "METHOD"
+
+    def __init__(self, method, verbose_name=None, value_type=None):
+        self.method = method
+        self.choices = None
+        self.read_only = True
+        self.verbose_name = verbose_name
+        if value_type:
+            self.field_type = value_type
+
+
+class ApiMetadata(Metadata):
+
+    def __init__(self, model, **kwargs):
+        self.method_fields = {}
+        super(ApiMetadata, self).__init__(model, **kwargs)
+    
+    def add_field(self, field_name, field, set_attribute=True):
+        super(ApiMetadata, self).add_field(field_name, field, set_attribute)
+        if isinstance(field, ApiMethodField) and field.name:
+            self.add_method_field(field)
+        
+    def add_method_field(self, field):
+        self.method_fields[field.name] = field
 
 
 class ApiModel(Model):
@@ -115,6 +153,13 @@ class ApiModel(Model):
                     raise Exception("不能识别的类型, 无法转换，source_type = {}".format(field.source_type))
         return params
     
+    def get_method_fields(self):
+        fields = list(self._meta.method_fields.values())
+        for field in fields:
+            r = getattr(self, field.method)()
+            setattr(self, field.name, r)
+        return self
+
     @classmethod
     def verify_params(cls, **params):
         # 验证 params 中的参数，主要验证非 None 字段是否有值
@@ -206,11 +251,11 @@ class ApiModel(Model):
         return True
     
     @classmethod
-    def diy_after_get(cls, json_data):
+    def diy_after_get(cls, **json_data):
         """
         在 GET 方法中获取到对象并转换为 json 之后，对返回值做一些操作。
         """
-        return True
+        return json_data
 
     @classmethod
     def to_json(cls, obj, without_fields=None, datetime_format="%Y-%m-%d %H:%M:%S"):
@@ -221,7 +266,7 @@ class ApiModel(Model):
                 content = cls.storage.read(getattr(obj, field.name))
                 setattr(obj, field.name, content)
         # to json
-        r = model_to_dict(obj, manytomany=cls._meta.manytomany)
+        r = api_model_to_dict(obj, manytomany=cls._meta.manytomany)
         # 将 many-to-many 的数据取出来
         # for field_name, field in cls._meta.manytomany.items():
         #     r[field_name] = [model_to_dict(x) for x in getattr(obj, field_name)]
@@ -234,6 +279,7 @@ class ApiModel(Model):
         return result
     
     class Meta:
+        model_metadata_class = ApiMetadata
         group = ""
         # verbose_name 指定别名，用于显示在 API 文档上。默认为 Model 的名称
         verbose_name = ""
@@ -253,7 +299,6 @@ class ApiModel(Model):
         qiniu_access_key = ""
         qiniu_secret_key = ""
         qiniu_bucket_url = ""
-        
 
 
 class ApiFileIDField(CharField):
@@ -343,3 +388,4 @@ class ApiUUIDField(Field):
         except Exception as e:
             print("Failed to convert value {} to uuid".format(value))
         return value
+

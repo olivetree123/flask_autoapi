@@ -30,10 +30,9 @@ class GenerateDoc(Command):
             for m in mtm:
                 print(m, m.name, type(m), isinstance(m, peewee.ManyToManyField), m.rel_model)
             fields = model.get_display_fields()
-            all_fields = model.get_fields() + list(model._meta.manytomany.values())
+            all_fields = model.get_fields() + list(model._meta.manytomany.values()) + list(model._meta.method_fields.values())
             for doc in docs:
                 if not doc:
-                    print("No doc")
                     continue
                 template = Template(doc)
                 content = template.render(

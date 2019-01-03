@@ -32,8 +32,7 @@ class BaseEndpoint(Resource):
                     { {% for f in mtom_fields(field) %} 
                         {{ str_align('"'+f.name+'"') }}: \t {{get_example(standard_type(f.field_type), f.choices)}}{% endfor %}
                     }
-                ]
-                {% endif %} {% endfor %}
+                ]{% endif %} {% endfor %}
             }
         }
 
@@ -41,6 +40,7 @@ class BaseEndpoint(Resource):
         without_fields = request.args.get("without_fields")
         without_fields = without_fields.split(",") if without_fields else None
         r = self.Model.get_with_pk(id, without_fields)
+        r.get_method_fields()
         r = self.Model.to_json(r, without_fields) if r else None
         r = self.Model.out_handlers(**r)
         r = self.Model.diy_after_get(**r)
@@ -67,8 +67,7 @@ class BaseEndpoint(Resource):
                     { {% for f in mtom_fields(field) %} 
                         {{ str_align('"'+f.name+'"') }}: \t {{get_example(standard_type(f.field_type), f.choices)}}{% endfor %}
                     }
-                ]
-                {% endif %} {% endfor %}
+                ]{% endif %} {% endfor %}
             }
         }
         """
@@ -86,6 +85,7 @@ class BaseEndpoint(Resource):
         r = self.Model.create(**params)
         r.save()
         r.mtom(**params)
+        r.get_method_fields()
         r = self.Model.to_json(r) if r else None
         r = self.Model.out_handlers(**r)
         r = self.Model.diy_after_get(**r)
@@ -111,8 +111,7 @@ class BaseEndpoint(Resource):
                     { {% for f in mtom_fields(field) %} 
                         {{ str_align('"'+f.name+'"') }}: \t {{get_example(standard_type(f.field_type), f.choices)}}{% endfor %}
                     }
-                ]
-                {% endif %} {% endfor %}
+                ]{% endif %} {% endfor %}
             }
         }
         
@@ -130,6 +129,7 @@ class BaseEndpoint(Resource):
         self.Model.diy_before_save(**params)
         r = self.Model.update_by_pk(id, **params)
         r.mtom(**params)
+        r.get_method_fields()
         r = self.Model.to_json(r) if r else None
         r = self.Model.out_handlers(**r)
         r = self.Model.diy_after_get(**r)
@@ -187,8 +187,7 @@ class BaseListEndpoint(Resource):
                         { {% for f in mtom_fields(field) %} 
                             {{ str_align('"'+f.name+'"') }}: \t {{get_example(standard_type(f.field_type), f.choices)}}{% endfor %}
                         }
-                    ]
-                    {% endif %} {% endfor %}
+                    ]{% endif %} {% endfor %}
                 }
             ],
         }
@@ -213,7 +212,7 @@ class BaseListEndpoint(Resource):
             result = result.where(getattr(self.Model, key) == value)
         result = result.order_by(self.Model.create_time.desc()) if order == 0 else result.order_by(self.Model.create_time.asc())
         result = result.offset((page-1)*num).limit(num)
-        result = [self.Model.to_json(r, without_fields) for r in result] if result else None
+        result = [self.Model.to_json(r.get_method_fields(), without_fields) for r in result] if result else None
         result = [self.Model.out_handlers(**r) for r in result]
         result = [self.Model.diy_after_get(**r) for r in result]
         return APIResponse(data=result)
