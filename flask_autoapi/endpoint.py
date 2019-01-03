@@ -26,8 +26,14 @@ class BaseEndpoint(Resource):
         {
             "code": 0,
             "message":"",
-            "data":{ {% for field in Fields %}
-                {{ str_align('"'+field.name+'"') }}: \t {{get_example(standard_type(field.field_type), field.choices)}}  {% if field.verbose_name %} \t # {{field.verbose_name}} {% endif %}{% endfor %},
+            "data":{ {% for field in AllFields %}
+                {{ str_align('"'+field.name+'"') }}: \t {% if is_mtom(field) is sameas false %} {{get_example(standard_type(field.field_type), field.choices)}} {% if field.verbose_name %} \t # {{field.verbose_name}} {% endif %} {% else %} 
+                [
+                    { {% for f in mtom_fields(field) %} 
+                        {{ str_align('"'+f.name+'"') }}: \t {{get_example(standard_type(f.field_type), f.choices)}}{% endfor %}
+                    }
+                ]
+                {% endif %} {% endfor %}
             }
         }
 
@@ -55,8 +61,14 @@ class BaseEndpoint(Resource):
         {
             "code": 0,
             "message":"",
-            "data":{ {% for field in Fields %}
-                {{ str_align('"'+field.name+'"') }}: \t {{get_example(standard_type(field.field_type), field.choices)}}  {% if field.verbose_name %} \t # {{field.verbose_name}} {% endif %}{% endfor %},
+            "data":{ {% for field in AllFields %}
+                {{ str_align('"'+field.name+'"') }}: \t {% if is_mtom(field) is sameas false %} {{get_example(standard_type(field.field_type), field.choices)}} {% if field.verbose_name %} \t # {{field.verbose_name}} {% endif %} {% else %} 
+                [
+                    { {% for f in mtom_fields(field) %} 
+                        {{ str_align('"'+f.name+'"') }}: \t {{get_example(standard_type(f.field_type), f.choices)}}{% endfor %}
+                    }
+                ]
+                {% endif %} {% endfor %}
             }
         }
         """
@@ -93,8 +105,14 @@ class BaseEndpoint(Resource):
         {
             "code": 0,
             "message": "",
-            "data":{ {% for field in Fields %}
-                {{ str_align('"'+field.name+'"') }}: \t {{get_example(standard_type(field.field_type), field.choices)}}  {% if field.verbose_name %} \t # {{field.verbose_name}} {% endif %}{% endfor %},
+            "data":{ {% for field in AllFields %}
+                {{ str_align('"'+field.name+'"') }}: \t {% if is_mtom(field) is sameas false %} {{get_example(standard_type(field.field_type), field.choices)}} {% if field.verbose_name %} \t # {{field.verbose_name}} {% endif %} {% else %} 
+                [
+                    { {% for f in mtom_fields(field) %} 
+                        {{ str_align('"'+f.name+'"') }}: \t {{get_example(standard_type(f.field_type), f.choices)}}{% endfor %}
+                    }
+                ]
+                {% endif %} {% endfor %}
             }
         }
         
@@ -163,8 +181,14 @@ class BaseListEndpoint(Resource):
             "code": 0,
             "message": null,
             "data": [
-                { {% for field in Fields %}
-                    {{ str_align('"'+field.name+'"') }}: \t {{get_example(standard_type(field.field_type), field.choices)}}  {% if field.verbose_name %} \t # {{field.verbose_name}} {% endif %}{% endfor %},
+                { {% for field in AllFields %}
+                    {{ str_align('"'+field.name+'"') }}: \t {% if is_mtom(field) is sameas false %} {{get_example(standard_type(field.field_type), field.choices)}} {% if field.verbose_name %} \t # {{field.verbose_name}} {% endif %} {% else %} 
+                    [
+                        { {% for f in mtom_fields(field) %} 
+                            {{ str_align('"'+f.name+'"') }}: \t {{get_example(standard_type(f.field_type), f.choices)}}{% endfor %}
+                        }
+                    ]
+                    {% endif %} {% endfor %}
                 }
             ],
         }

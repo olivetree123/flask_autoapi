@@ -1,5 +1,7 @@
 # jinja2 filters
 import uuid
+import json
+import peewee
 from datetime import datetime
 
 from flask_autoapi.utils.diyutils import datetime_to_str
@@ -32,3 +34,14 @@ def get_example(tp, choices=None):
         return 12
     if tp == "bool":
         return 1
+    return tp
+
+def is_mtom(field):
+    return isinstance(field, peewee.ManyToManyField)
+
+def mtom_fields(field):
+    model = field.rel_model
+    fields = model.get_fields()
+    # fields = model.get_fields() + list(model._meta.manytomany.values())
+    return fields
+

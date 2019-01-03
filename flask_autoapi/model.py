@@ -1,7 +1,8 @@
+import uuid
 import types
 import werkzeug
 from io import BytesIO
-from peewee import Model, CharField, ManyToManyField, ForeignKeyField
+from peewee import Model, CharField, ManyToManyField, ForeignKeyField, Field
 from playhouse.shortcuts import model_to_dict
 
 from flask_autoapi.storage import Storage
@@ -83,7 +84,7 @@ class ApiModel(Model):
                 continue
             handler = getattr(cls, field.out_handler)
             if not (handler and isinstance(handler, types.MethodType)):
-                raise Exception("out_handler should be function, but {} found.".format(type(handler)))
+                raise Exception("out_handler should be MethodType, but {} found.".format(type(handler)))
             data[field.name] = handler(data.get(field.name))
         return data
 
@@ -313,3 +314,32 @@ class ApiManyToManyField(ManyToManyField):
                 attrs)
 
         return self.through_model
+
+
+class ApiUUIDField(Field):
+    field_type = "char(32)"
+
+    def __init__(self, **kwargs):
+        self.in_handler  = kwargs.pop("in_handler", None)
+        self.out_handler = kwargs.pop("out_handler", None)
+        # self.obj_func = kwargs.pop("obj_func", None)
+        super(ApiUUIDField, self).__init__(**kwargs)
+
+    def db_value(self, value):
+        if not isinstance(value, (str, uuid.UUID)):
+            return value
+        if isinstance(value, str):
+            # value = uuid.UUID(value)
+            try:
+                value = uuid.UUID(value)  # convert hex string to UUID
+            except Exception as e:
+                print("Failed to convert value {} to uuid".format(value))
+        value = value.hex if isinstance(value, uuid.UUID) else str(value)  # convert UUID to hex string.
+        return value
+
+    def python_value(self, value):
+        try:
+            value = uuid.UUID(value)  # convert hex string to UUID
+        except Exception as e:
+            print("Failed to convert value {} to uuid".format(value))
+        return value

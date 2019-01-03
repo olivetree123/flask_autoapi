@@ -1,8 +1,9 @@
 import os
+import peewee
 from jinja2 import Template
 from flask_script import Command
 
-from flask_autoapi.utils.filter import standard_type, str_align, get_example
+from flask_autoapi.utils.filter import standard_type, str_align, get_example, is_mtom, mtom_fields
 from flask_autoapi.utils.cmd import sys_apidoc
 from flask_autoapi.endpoint import BaseEndpoint, BaseListEndpoint
 
@@ -25,7 +26,11 @@ class GenerateDoc(Command):
         ]
         f = open(os.path.join(self.static_folder, "doc.py"), "w+")
         for model in self.model_list:
+            mtm = list(model._meta.manytomany.values())
+            for m in mtm:
+                print(m, m.name, type(m), isinstance(m, peewee.ManyToManyField), m.rel_model)
             fields = model.get_display_fields()
+            all_fields = model.get_fields() + list(model._meta.manytomany.values())
             for doc in docs:
                 if not doc:
                     print("No doc")
@@ -33,6 +38,7 @@ class GenerateDoc(Command):
                 template = Template(doc)
                 content = template.render(
                     Fields=fields,
+                    AllFields=all_fields,
                     ModelName=model.__name__, 
                     Title=model._meta.verbose_name, 
                     Group=model._meta.group or model.__name__,
@@ -40,6 +46,8 @@ class GenerateDoc(Command):
                     standard_type=standard_type,
                     get_example=get_example,
                     project_name=project_name,
+                    is_mtom=is_mtom,
+                    mtom_fields=mtom_fields,
                 )
                 f.write('"""'+content+'\n"""\n')
         f.close()
