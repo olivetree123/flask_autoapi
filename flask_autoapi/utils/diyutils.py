@@ -14,9 +14,9 @@ def field_to_json(value, datetime_format=DATETIME_FORMAT):
     if isinstance(value, datetime):
         ret = datetime_to_str(value, datetime_format)
     elif isinstance(value, list):
-        ret = [field_to_json(_) for _ in value]
+        ret = [field_to_json(_) for _ in value] if value else None
     elif isinstance(value, dict):
-        ret = {k: field_to_json(v) for k, v in value.items()}
+        ret = {k: field_to_json(v) for k, v in value.items()} if value else None
     elif isinstance(value, bytes):
         ret = value.decode("utf-8")
     elif isinstance(value, bool):

@@ -37,6 +37,7 @@ class BaseEndpoint(Resource):
         r = self.Model.get_with_pk(id, without_fields)
         r = self.Model.to_json(r, without_fields) if r else None
         r = self.Model.out_handlers(**r)
+        r = self.Model.diy_after_get(**r)
         return APIResponse(data=r)
     
     def post(self):
@@ -75,6 +76,7 @@ class BaseEndpoint(Resource):
         r.mtom(**params)
         r = self.Model.to_json(r) if r else None
         r = self.Model.out_handlers(**r)
+        r = self.Model.diy_after_get(**r)
         return APIResponse(data=r)
     
     def put(self, id):
@@ -112,6 +114,7 @@ class BaseEndpoint(Resource):
         r.mtom(**params)
         r = self.Model.to_json(r) if r else None
         r = self.Model.out_handlers(**r)
+        r = self.Model.diy_after_get(**r)
         return APIResponse(data=r)
     
     def delete(self, id):
@@ -188,5 +191,6 @@ class BaseListEndpoint(Resource):
         result = result.offset((page-1)*num).limit(num)
         result = [self.Model.to_json(r, without_fields) for r in result] if result else None
         result = [self.Model.out_handlers(**r) for r in result]
+        result = [self.Model.diy_after_get(**r) for r in result]
         return APIResponse(data=result)
         

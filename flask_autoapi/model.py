@@ -81,7 +81,6 @@ class ApiModel(Model):
         for field in fields:
             if not (hasattr(field, "out_handler") and getattr(field, "out_handler")):
                 continue
-            print("field_name = {}, out_handler = {}".format(field.name, field.out_handler))
             handler = getattr(cls, field.out_handler)
             if not (handler and isinstance(handler, types.MethodType)):
                 raise Exception("out_handler should be function, but {} found.".format(type(handler)))
@@ -201,6 +200,14 @@ class ApiModel(Model):
         """
         用于 POST/PUT 方法。
         做一些自定义操作，但是不能修改参数。
+        修改参数应该使用各个Field 的 in_handler。
+        """
+        return True
+    
+    @classmethod
+    def diy_after_get(cls, json_data):
+        """
+        在 GET 方法中获取到对象并转换为 json 之后，对返回值做一些操作。
         """
         return True
 
