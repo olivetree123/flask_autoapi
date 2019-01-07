@@ -52,6 +52,7 @@ class BaseEndpoint(Resource):
         r = self.Model.get_with_pk(id, without_fields)
         if not r:
             return APIResponse()
+        self.Model.init_storage()
         r.get_method_fields()
         r = self.Model.to_json(r, without_fields) if r else None
         r = self.Model.out_handlers(**r)
@@ -95,6 +96,7 @@ class BaseEndpoint(Resource):
         """
         params = request.get_json() if request.content_type == "application/json" else request.form.to_dict()
         params.update(request.files.to_dict())
+        self.Model.init_storage()
         params = self.Model.in_handlers(**params)
         params = self.Model.format_params(**params)
         status = self.Model.verify_params(**params)
@@ -105,7 +107,6 @@ class BaseEndpoint(Resource):
             return APIResponse(BAD_REQUEST)
         self.Model.diy_before_save(**params)
         r = self.Model.create(**params)
-        r.save()
         r.mtom(**params)
         r.get_method_fields()
         r = self.Model.to_json(r) if r else None
@@ -155,6 +156,7 @@ class BaseEndpoint(Resource):
         status = self.Model.verify_params(**params)
         if not status:
             return APIResponse(BAD_REQUEST)
+        self.Model.init_storage()
         params = self.Model.upload_files(**params)
         if not self.Model.validate(**params):
             return APIResponse(BAD_REQUEST)
@@ -248,6 +250,7 @@ class BaseListEndpoint(Resource):
             return APIResponse(BAD_REQUEST)
         if not order in (0, 1):
             return APIResponse(BAD_REQUEST)
+        self.Model.init_storage()
         without_fields = request.args.get("without_fields")
         without_fields = without_fields.split(",") if without_fields else None
         fields = self.Model.get_fields()

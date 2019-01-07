@@ -1,4 +1,5 @@
 import os
+from minio import Minio
 
 from flask_autoapi.utils.diyutils import content_md5
 from flask_autoapi.storage.handler import FileHandler, MinioHandler, QiniuHandler
@@ -88,5 +89,5 @@ class Storage(object):
             content = file_obj.read()
             setattr(file_obj, "md5_hash", content_md5(content))
             setattr(file_obj, "length", len(content))
-            file_obj.seek(0, os.SEEK_SET)    
+            file_obj.seek(0, os.SEEK_SET)
 

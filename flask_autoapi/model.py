@@ -184,7 +184,7 @@ class ApiModel(Model):
     
     @classmethod
     def upload_files(cls, **params):
-        cls.init_storage()
+        # cls.init_storage()
         fields = cls.get_fields()
         for field in fields:
             if not params.get(field.name):
@@ -270,11 +270,11 @@ class ApiModel(Model):
     @classmethod
     def to_json(cls, obj, without_fields=None, datetime_format="%Y-%m-%d %H:%M:%S"):
         fields = cls.get_fields()
-        for field in fields:
-            # 如果数据源为 string，则返回时也应该返回 string
-            if hasattr(field, "source_type") and field.source_type == "string" and getattr(obj, field.name):
-                content = cls.storage.read(getattr(obj, field.name))
-                setattr(obj, field.name, content)
+        # for field in fields:
+        #     # 如果数据源为 string，则返回时也应该返回 string
+        #     if hasattr(field, "source_type") and field.source_type == "string" and getattr(obj, field.name):
+        #         content = cls.storage.read(getattr(obj, field.name))
+        #         setattr(obj, field.name, content)
         # to json
         r = api_model_to_dict(obj, manytomany=cls._meta.manytomany)
         # 将 many-to-many 的数据取出来
@@ -319,6 +319,16 @@ class ApiFileIDField(CharField):
         self.source_type = kwargs.pop("source_type", "file")
         super(ApiFileIDField, self).__init__(max_length=max_length, *args, **kwargs)
 
+    # def db_value(self, value):
+    #     # 写数据库时会使用该函数返回的值，但是并不会修改参数的值
+    #     print("--- db value ---")
+    #     r = self.model.storage.write(value)
+    #     return r
+    
+    def python_value(self, value):
+        # just for select sql
+        content = self.model.storage.read(value)
+        return content
 
 class ApiCharField(CharField):
 
