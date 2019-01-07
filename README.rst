@@ -82,3 +82,6 @@ TODO
 7. list 接口分页    √
 8. 记录所有 POST/PUT/DELETE 操作的日志
 9. 入库之前，用户可能需要有自定义的操作     √
+10. 对于 unique key，应该禁止插入相同的数据，但不应该500
+11. 支持 mini_json，该方法不处理 ApiMethodField 和 ApiManyToManyField
+12. 支持自定义 serialize

@@ -45,3 +45,14 @@ def mtom_fields(field):
     # fields = model.get_fields() + list(model._meta.manytomany.values())
     return fields
 
+def method_field_example(field):
+    if not field.field_type == "METHOD":
+        return None
+    r = field.method_class.get_example()
+    if not isinstance(r, (list, tuple, dict)):
+        return r
+    r = json.dumps(r, sort_keys=True, indent=4)
+    result = ""
+    for line in r.split("\n"):
+        result += "\n                " + line
+    return result

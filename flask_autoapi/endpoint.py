@@ -26,13 +26,23 @@ class BaseEndpoint(Resource):
         {
             "code": 0,
             "message":"",
-            "data":{ {% for field in AllFields %}
-                {{ str_align('"'+field.name+'"') }}: \t {% if is_mtom(field) is sameas false %} {{get_example(standard_type(field.field_type), field.choices)}} {% if field.verbose_name %} \t # {{field.verbose_name}} {% endif %} {% else %} 
+            "data":{ 
+                {% for field in AllFields -%}
+                {{ str_align('"'+field.name+'"') }}: \t 
+                {%- if is_mtom(field) is sameas false -%} 
+                    {%- if field.field_type == "METHOD" -%} 
+                        {{method_field_example(field)}} 
+                    {%- else -%}
+                        {{get_example(standard_type(field.field_type), field.choices)}} 
+                    {%- endif -%}
+                    {% if field.verbose_name %} \t # {{field.verbose_name}} {% endif %} 
+                {% else %} 
                 [
                     { {% for f in mtom_fields(field) %} 
-                        {{ str_align('"'+f.name+'"') }}: \t {{get_example(standard_type(f.field_type), f.choices)}}{% endfor %}
+                        {{ str_align('"'+f.name+'"') }}:{{get_example(standard_type(f.field_type), f.choices)}}{% endfor %}
                     }
-                ]{% endif %} {% endfor %}
+                ]
+                {% endif -%} {% endfor %}
             }
         }
 
@@ -40,6 +50,8 @@ class BaseEndpoint(Resource):
         without_fields = request.args.get("without_fields")
         without_fields = without_fields.split(",") if without_fields else None
         r = self.Model.get_with_pk(id, without_fields)
+        if not r:
+            return APIResponse()
         r.get_method_fields()
         r = self.Model.to_json(r, without_fields) if r else None
         r = self.Model.out_handlers(**r)
@@ -61,13 +73,23 @@ class BaseEndpoint(Resource):
         {
             "code": 0,
             "message":"",
-            "data":{ {% for field in AllFields %}
-                {{ str_align('"'+field.name+'"') }}: \t {% if is_mtom(field) is sameas false %} {{get_example(standard_type(field.field_type), field.choices)}} {% if field.verbose_name %} \t # {{field.verbose_name}} {% endif %} {% else %} 
+            "data":{ 
+                {% for field in AllFields -%}
+                {{ str_align('"'+field.name+'"') }}: \t 
+                {%- if is_mtom(field) is sameas false -%} 
+                    {%- if field.field_type == "METHOD" -%} 
+                        {{method_field_example(field)}} 
+                    {%- else -%}
+                        {{get_example(standard_type(field.field_type), field.choices)}} 
+                    {%- endif -%}
+                    {% if field.verbose_name %} \t # {{field.verbose_name}} {% endif %} 
+                {% else %} 
                 [
                     { {% for f in mtom_fields(field) %} 
-                        {{ str_align('"'+f.name+'"') }}: \t {{get_example(standard_type(f.field_type), f.choices)}}{% endfor %}
+                        {{ str_align('"'+f.name+'"') }}:{{get_example(standard_type(f.field_type), f.choices)}}{% endfor %}
                     }
-                ]{% endif %} {% endfor %}
+                ]
+                {% endif -%} {% endfor %}
             }
         }
         """
@@ -104,14 +126,24 @@ class BaseEndpoint(Resource):
         @apiExample 返回值
         {
             "code": 0,
-            "message": "",
-            "data":{ {% for field in AllFields %}
-                {{ str_align('"'+field.name+'"') }}: \t {% if is_mtom(field) is sameas false %} {{get_example(standard_type(field.field_type), field.choices)}} {% if field.verbose_name %} \t # {{field.verbose_name}} {% endif %} {% else %} 
+            "message":"",
+            "data":{ 
+                {% for field in AllFields -%}
+                {{ str_align('"'+field.name+'"') }}: \t 
+                {%- if is_mtom(field) is sameas false -%} 
+                    {%- if field.field_type == "METHOD" -%} 
+                        {{method_field_example(field)}} 
+                    {%- else -%}
+                        {{get_example(standard_type(field.field_type), field.choices)}} 
+                    {%- endif -%}
+                    {% if field.verbose_name %} \t # {{field.verbose_name}} {% endif %} 
+                {% else %} 
                 [
                     { {% for f in mtom_fields(field) %} 
-                        {{ str_align('"'+f.name+'"') }}: \t {{get_example(standard_type(f.field_type), f.choices)}}{% endfor %}
+                        {{ str_align('"'+f.name+'"') }}:{{get_example(standard_type(f.field_type), f.choices)}}{% endfor %}
                     }
-                ]{% endif %} {% endfor %}
+                ]
+                {% endif -%} {% endfor %}
             }
         }
         
@@ -181,13 +213,27 @@ class BaseListEndpoint(Resource):
             "code": 0,
             "message": null,
             "data": [
-                { {% for field in AllFields %}
-                    {{ str_align('"'+field.name+'"') }}: \t {% if is_mtom(field) is sameas false %} {{get_example(standard_type(field.field_type), field.choices)}} {% if field.verbose_name %} \t # {{field.verbose_name}} {% endif %} {% else %} 
-                    [
-                        { {% for f in mtom_fields(field) %} 
-                            {{ str_align('"'+f.name+'"') }}: \t {{get_example(standard_type(f.field_type), f.choices)}}{% endfor %}
-                        }
-                    ]{% endif %} {% endfor %}
+                {
+                    "code": 0,
+                    "message":"",
+                    "data":{ 
+                        {% for field in AllFields -%}
+                        {{ str_align('"'+field.name+'"') }}: \t 
+                        {%- if is_mtom(field) is sameas false -%} 
+                            {%- if field.field_type == "METHOD" -%} 
+                                {{method_field_example(field)}} 
+                            {%- else -%}
+                                {{get_example(standard_type(field.field_type), field.choices)}} 
+                            {%- endif -%}
+                            {% if field.verbose_name %} \t # {{field.verbose_name}} {% endif %} 
+                        {% else %} 
+                        [
+                            { {% for f in mtom_fields(field) %} 
+                                {{ str_align('"'+f.name+'"') }}:{{get_example(standard_type(f.field_type), f.choices)}}{% endfor %}
+                            }
+                        ]
+                        {% endif -%} {% endfor %}
+                    }
                 }
             ],
         }
@@ -213,7 +259,7 @@ class BaseListEndpoint(Resource):
         result = result.order_by(self.Model.create_time.desc()) if order == 0 else result.order_by(self.Model.create_time.asc())
         result = result.offset((page-1)*num).limit(num)
         result = [self.Model.to_json(r.get_method_fields(), without_fields) for r in result] if result else None
-        result = [self.Model.out_handlers(**r) for r in result]
-        result = [self.Model.diy_after_get(**r) for r in result]
+        result = [self.Model.out_handlers(**r) for r in result] if result else None
+        result = [self.Model.diy_after_get(**r) for r in result] if result else None
         return APIResponse(data=result)
         

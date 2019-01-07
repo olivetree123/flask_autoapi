@@ -17,19 +17,29 @@ def api_model_to_dict(obj, **kwargs):
     return data
 
 
+class MethodClass(object):
+    def get(self, obj):
+        raise NotImplementedError("get function should be implemented.")
+    
+    def get_example(self):
+        raise NotImplementedError("get_example function should be implemented.")
+
+
 class ApiMethodField(MetaField):
     """
     A readonly field, get value by object method.
     """
     field_type = "METHOD"
 
-    def __init__(self, method, verbose_name=None, value_type=None):
-        self.method = method
-        self.choices = None
-        self.read_only = True
+    def __init__(self, method_class, verbose_name=None):
+        self.choices      = None
+        self.read_only    = True
+        self.method_class = method_class
         self.verbose_name = verbose_name
-        if value_type:
-            self.field_type = value_type
+        if not self.method_class:
+            raise Exception("method_class should not be None.")
+        if not issubclass(self.method_class, MethodClass):
+            raise Exception("method_class should not be subclass of MethodClass.")
 
 
 class ApiMetadata(Metadata):
@@ -92,7 +102,7 @@ class ApiModel(Model):
         # 对原始的参数进行处理
         fields = cls.get_fields() + list(cls._meta.manytomany.values())
         for field in fields:
-            if not hasattr(field, "in_handler"):
+            if not (hasattr(field, "in_handler") and field.in_handler):
                 continue
             handler = getattr(cls, field.in_handler)
             if not (handler and isinstance(handler, types.MethodType)):
@@ -156,7 +166,7 @@ class ApiModel(Model):
     def get_method_fields(self):
         fields = list(self._meta.method_fields.values())
         for field in fields:
-            r = getattr(self, field.method)()
+            r = field.method_class.get(self)
             setattr(self, field.name, r)
         return self
 
