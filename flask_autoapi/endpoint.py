@@ -1,3 +1,4 @@
+import math
 from flask import request
 from flask_restful import Resource, marshal_with
 
@@ -216,26 +217,22 @@ class BaseListEndpoint(Resource):
             "message": null,
             "data": [
                 {
-                    "code": 0,
-                    "message":"",
-                    "data":{ 
-                        {% for field in AllFields -%}
-                        {{ str_align('"'+field.name+'"') }}: \t 
-                        {%- if is_mtom(field) is sameas false -%} 
-                            {%- if field.field_type == "METHOD" -%} 
-                                {{method_field_example(field)}} 
-                            {%- else -%}
-                                {{get_example(standard_type(field.field_type), field.choices)}} 
-                            {%- endif -%}
-                            {% if field.verbose_name %} \t # {{field.verbose_name}} {% endif %} 
-                        {% else %} 
-                        [
-                            { {% for f in mtom_fields(field) %} 
-                                {{ str_align('"'+f.name+'"') }}:{{get_example(standard_type(f.field_type), f.choices)}}{% endfor %}
-                            }
-                        ]
-                        {% endif -%} {% endfor %}
-                    }
+                    {% for field in AllFields -%}
+                    {{ str_align('"'+field.name+'"') }}: \t 
+                    {%- if is_mtom(field) is sameas false -%} 
+                        {%- if field.field_type == "METHOD" -%} 
+                            {{method_field_example(field)}} 
+                        {%- else -%}
+                            {{get_example(standard_type(field.field_type), field.choices)}} 
+                        {%- endif -%}
+                        {% if field.verbose_name %} \t # {{field.verbose_name}} {% endif %} 
+                    {% else %} 
+                    [
+                        { {% for f in mtom_fields(field) %} 
+                            {{ str_align('"'+f.name+'"') }}:{{get_example(standard_type(f.field_type), f.choices)}}{% endfor %}
+                        }
+                    ]
+                    {% endif -%} {% endfor %}
                 }
             ],
         }
@@ -258,11 +255,26 @@ class BaseListEndpoint(Resource):
                     if without_fields else fields
         result = self.Model.select(*fields)
         for key, value in args.items():
-            result = result.where(getattr(self.Model, key) == value)
+            if value.find("~") >= 0:
+                a, b = value.split("~")
+                a = a.strip()
+                b = b.strip()
+                if a:
+                    result = result.where(getattr(self.Model, key) >= a)
+                if b:
+                    result = result.where(getattr(self.Model, key) <= b)
+            else:
+                result = result.where(getattr(self.Model, key) == value)
         result = result.order_by(self.Model.create_time.desc()) if order == 0 else result.order_by(self.Model.create_time.asc())
+        total_count = result.count()
         result = result.offset((page-1)*num).limit(num)
         result = [self.Model.to_json(r.get_method_fields(), without_fields) for r in result] if result else None
         result = [self.Model.out_handlers(**r) for r in result] if result else None
         result = [self.Model.diy_after_get(**r) for r in result] if result else None
+        result = {
+            "total_page": math.ceil(total_count/num),
+            "page": page,
+            "result":result
+        }
         return APIResponse(data=result)
         
