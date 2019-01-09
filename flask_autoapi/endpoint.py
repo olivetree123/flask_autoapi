@@ -50,10 +50,10 @@ class BaseEndpoint(Resource):
         """
         without_fields = request.args.get("without_fields")
         without_fields = without_fields.split(",") if without_fields else None
+        # self.Model.init_storage()
         r = self.Model.get_with_pk(id, without_fields)
         if not r:
             return APIResponse()
-        self.Model.init_storage()
         r.get_method_fields()
         r = self.Model.to_json(r, without_fields) if r else None
         r = self.Model.out_handlers(**r)
@@ -97,7 +97,7 @@ class BaseEndpoint(Resource):
         """
         params = request.get_json() if request.content_type == "application/json" else request.form.to_dict()
         params.update(request.files.to_dict())
-        self.Model.init_storage()
+        # self.Model.init_storage()
         params = self.Model.in_handlers(**params)
         params = self.Model.format_params(**params)
         status = self.Model.verify_params(**params)
@@ -152,12 +152,12 @@ class BaseEndpoint(Resource):
         """
         params = request.get_json() if request.content_type == "application/json" else request.form.to_dict()
         params.update(request.files.to_dict())
+        # self.Model.init_storage()
         params = self.Model.in_handlers(**params)
         params = self.Model.format_params(**params)
         status = self.Model.verify_params(**params)
         if not status:
             return APIResponse(BAD_REQUEST)
-        self.Model.init_storage()
         params = self.Model.upload_files(**params)
         if not self.Model.validate(**params):
             return APIResponse(BAD_REQUEST)
@@ -238,7 +238,6 @@ class BaseListEndpoint(Resource):
         }
         """
         args = request.args.to_dict()
-        args = self.Model.verify_list_args(**args)
         try:
             page  = int(args.get("page", 1))
             num   = int(args.get("num", 10))
@@ -247,7 +246,8 @@ class BaseListEndpoint(Resource):
             return APIResponse(BAD_REQUEST)
         if not order in (0, 1):
             return APIResponse(BAD_REQUEST)
-        self.Model.init_storage()
+        # self.Model.init_storage()
+        args = self.Model.verify_list_args(**args)
         without_fields = request.args.get("without_fields")
         without_fields = without_fields.split(",") if without_fields else None
         fields = self.Model.get_fields()
@@ -272,7 +272,8 @@ class BaseListEndpoint(Resource):
         result = [self.Model.out_handlers(**r) for r in result] if result else None
         result = [self.Model.diy_after_get(**r) for r in result] if result else None
         result = {
-            "total_page": math.ceil(total_count/num),
+            "num":num,
+            "count": total_count,
             "page": page,
             "result":result
         }

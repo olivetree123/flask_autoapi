@@ -8,9 +8,10 @@ from flask_autoapi.utils.cmd import sys_apidoc
 from flask_autoapi.endpoint import BaseEndpoint, BaseListEndpoint
 
 class GenerateDoc(Command):
-    def __init__(self, model_list, static_folder="static"):
+    def __init__(self, model_list, diy_endpoint_list=None, static_folder="static"):
         self.static_folder = static_folder
         self.model_list = model_list
+        self.diy_endpoint_list = diy_endpoint_list
         self.docs_folder = os.path.join(self.static_folder, "docs")
 
     def run(self, project_name=""):
@@ -24,6 +25,11 @@ class GenerateDoc(Command):
             BaseEndpoint.delete.__doc__,
             BaseListEndpoint.get.__doc__,
         ]
+        for endpoint in self.diy_endpoint_list:
+            if hasattr(endpoint, "get"):
+                docs.append(endpoint.get.__doc__, )
+            if hasattr(endpoint, "post"):
+                docs.append(endpoint.post.__doc__, )
         f = open(os.path.join(self.static_folder, "doc.py"), "w+")
         for model in self.model_list:
             mtm = list(model._meta.manytomany.values())

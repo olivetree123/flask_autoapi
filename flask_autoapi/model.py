@@ -175,7 +175,7 @@ class ApiModel(Model):
         # 验证 params 中的参数，主要验证非 None 字段是否有值
         fields = cls.get_fields()
         for field in fields:
-            if field.auto_increment or field.default or field.null:
+            if field.auto_increment or field.default is not None or field.null:
                 continue
             if params.get(field.name) is None:
                 print("{} is None".format(field.name))
@@ -190,7 +190,7 @@ class ApiModel(Model):
             if not params.get(field.name):
                 continue
             if isinstance(field, ApiFileIDField):
-                file_id = cls.storage.write(params[field.name])
+                file_id = cls._meta.storage.write(params[field.name])
                 params[field.name] = file_id
         return params
     
@@ -226,21 +226,21 @@ class ApiModel(Model):
         r.save()
         return r
     
-    @classmethod
-    def init_storage(cls):
-        storage = Storage(
-            kind=cls._meta.store_kind,
-            bucket=cls._meta.bucket,
-            minio_url=cls._meta.minio_url, 
-            minio_secure=cls._meta.minio_secure,
-            minio_access_key=cls._meta.minio_access_key, 
-            minio_secret_key=cls._meta.minio_secret_key,
-            qiniu_url = cls._meta.qiniu_url,
-            qiniu_access_key = cls._meta.qiniu_access_key,
-            qiniu_secret_key = cls._meta.qiniu_secret_key,
-            qiniu_bucket_url = cls._meta.qiniu_bucket_url,
-        )
-        setattr(cls, "storage", storage)
+    # @classmethod
+    # def init_storage(cls):
+    #     storage = Storage(
+    #         kind=cls._meta.store_kind,
+    #         bucket=cls._meta.bucket,
+    #         minio_url=cls._meta.minio_url, 
+    #         minio_secure=cls._meta.minio_secure,
+    #         minio_access_key=cls._meta.minio_access_key, 
+    #         minio_secret_key=cls._meta.minio_secret_key,
+    #         qiniu_url = cls._meta.qiniu_url,
+    #         qiniu_access_key = cls._meta.qiniu_access_key,
+    #         qiniu_secret_key = cls._meta.qiniu_secret_key,
+    #         qiniu_bucket_url = cls._meta.qiniu_bucket_url,
+    #     )
+    #     setattr(cls, "storage", storage)
 
     @classmethod
     def validate(cls, **params):
@@ -273,7 +273,7 @@ class ApiModel(Model):
         # for field in fields:
         #     # 如果数据源为 string，则返回时也应该返回 string
         #     if hasattr(field, "source_type") and field.source_type == "string" and getattr(obj, field.name):
-        #         content = cls.storage.read(getattr(obj, field.name))
+        #         content = cls._meta.storage.read(getattr(obj, field.name))
         #         setattr(obj, field.name, content)
         # to json
         r = api_model_to_dict(obj, manytomany=cls._meta.manytomany)
@@ -295,20 +295,22 @@ class ApiModel(Model):
         verbose_name = ""
         # filter_fields 用于指定 list 接口的参数
         filter_fields = ()
+        # storage 是 Storage 的对象
+        storage = None
         # store_kind 指定文件存储的方式，支持 file/minio/qiniu
-        store_kind = "file"
+        # store_kind = "file"
         # bucket 指定文件存储文件夹，或云存储的 bucket
-        bucket = ""
+        # bucket = ""
         # minio 配置
-        minio_url = ""
-        minio_secure = False
-        minio_access_key = ""
-        minio_secret_key = ""
+        # minio_url = ""
+        # minio_secure = False
+        # minio_access_key = ""
+        # minio_secret_key = ""
         # qiniu 配置
-        qiniu_url = ""
-        qiniu_access_key = ""
-        qiniu_secret_key = ""
-        qiniu_bucket_url = ""
+        # qiniu_url = ""
+        # qiniu_access_key = ""
+        # qiniu_secret_key = ""
+        # qiniu_bucket_url = ""
 
 
 class ApiFileIDField(CharField):
@@ -322,12 +324,12 @@ class ApiFileIDField(CharField):
     # def db_value(self, value):
     #     # 写数据库时会使用该函数返回的值，但是并不会修改参数的值
     #     print("--- db value ---")
-    #     r = self.model.storage.write(value)
+    #     r = self.model._meta.storage.write(value)
     #     return r
     
     def python_value(self, value):
         # just for select sql
-        content = self.model.storage.read(value)
+        content = self.model._meta.storage.read(value)
         return content
 
 class ApiCharField(CharField):
