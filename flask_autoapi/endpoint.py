@@ -50,7 +50,6 @@ class BaseEndpoint(Resource):
         """
         without_fields = request.args.get("without_fields")
         without_fields = without_fields.split(",") if without_fields else None
-        # self.Model.init_storage()
         r = self.Model.get_with_pk(id, without_fields)
         if not r:
             return APIResponse()
@@ -97,7 +96,6 @@ class BaseEndpoint(Resource):
         """
         params = request.get_json() if request.content_type == "application/json" else request.form.to_dict()
         params.update(request.files.to_dict())
-        # self.Model.init_storage()
         params = self.Model.in_handlers(**params)
         params = self.Model.format_params(**params)
         status = self.Model.verify_params(**params)
@@ -152,7 +150,6 @@ class BaseEndpoint(Resource):
         """
         params = request.get_json() if request.content_type == "application/json" else request.form.to_dict()
         params.update(request.files.to_dict())
-        # self.Model.init_storage()
         params = self.Model.in_handlers(**params)
         params = self.Model.format_params(**params)
         status = self.Model.verify_params(**params)
@@ -246,7 +243,6 @@ class BaseListEndpoint(Resource):
             return APIResponse(BAD_REQUEST)
         if not order in (0, 1):
             return APIResponse(BAD_REQUEST)
-        # self.Model.init_storage()
         args = self.Model.verify_list_args(**args)
         without_fields = request.args.get("without_fields")
         without_fields = without_fields.split(",") if without_fields else None

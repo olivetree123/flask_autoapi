@@ -76,6 +76,11 @@ class ApiModel(Model):
     @classmethod
     def get_field_names(cls):
         return cls._meta.sorted_field_names
+    
+    @classmethod
+    def get_all_field_names(cls):
+        all_fields = cls.get_fields() + list(cls._meta.manytomany.values())
+        return [field.name for field in all_fields]
 
     @classmethod
     def get_fields(cls):
@@ -138,6 +143,11 @@ class ApiModel(Model):
 
     @classmethod
     def format_params(cls, **params):
+        all_field_names = cls.get_all_field_names()
+        for key in list(params.keys()):
+            if key in all_field_names:
+                continue
+            params.pop(key)
         # 格式化参数，主要是将 str 转换成 file 对象
         fields = cls.get_fields()
         for field in fields:

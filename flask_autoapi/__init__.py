@@ -15,7 +15,7 @@ class AutoAPI(object):
         self.doc_folder = "docs"
         self._lazy_resources = []
     
-    def init_app(self, app, model_list, project_name=""):
+    def init_app(self, app, model_list, decorator_list=None, project_name=""):
         if not isinstance(model_list, (list, tuple)):
             raise Exception("model_list 应该是一个列表，不是{}".format(type(model_list)))
         for model in model_list:
@@ -28,6 +28,7 @@ class AutoAPI(object):
             raise Exception("project_name 不能为空，需要使用 project_name 作为 URL 前缀")
         self.app.add_url_rule("/docs/", "docs", self._static_file, strict_slashes=True)
         self.app.add_url_rule("/docs/<path:path>", "docs", self._static_file, strict_slashes=True)
+        self._add_decorators(decorator_list)
         self._auto_urls()
         self.api.init_app(self.app)
         for data in self._lazy_resources:
@@ -57,6 +58,11 @@ class AutoAPI(object):
         path = os.path.join(self.doc_folder, path)
         return self.app.send_static_file(path)
     
+    def _add_decorators(self, decorator_list):
+        if decorator_list:
+            BaseEndpoint.add_decorators(decorator_list)
+            BaseListEndpoint.add_decorators(decorator_list)
+
     def _auto_urls(self):
         endpoints = []
         for model in self.model_list:
