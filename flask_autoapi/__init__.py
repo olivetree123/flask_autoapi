@@ -32,7 +32,7 @@ class AutoAPI(object):
         self._auto_urls()
         self.api.init_app(self.app)
         for data in self._lazy_resources:
-            self.update_resource(data[0], data[1])
+            self.update_resource(data[0], *data[1:])
     
     def update_resource(self, resource, *urls):
         if self.app:
@@ -40,7 +40,7 @@ class AutoAPI(object):
             func = self.api.output(resource.as_view(endpoint))
             self._del_exists_endpoint(endpoint)
             for url in urls:
-                self.app.add_url_rule(url, endpoint, func)
+                self.app.add_url_rule(url, endpoint, func, strict_slashes=True)
         else:
             self._lazy_resources.append((resource, *urls))
     
