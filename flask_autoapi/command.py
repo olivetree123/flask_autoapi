@@ -30,6 +30,10 @@ class GenerateDoc(Command):
                 docs.append(endpoint.get.__doc__, )
             if hasattr(endpoint, "post"):
                 docs.append(endpoint.post.__doc__, )
+            if hasattr(endpoint, "put"):
+                docs.append(endpoint.put.__doc__, )
+            if hasattr(endpoint, "delete"):
+                docs.append(endpoint.delete.__doc__, )
         f = open(os.path.join(self.static_folder, "doc.py"), "w+")
         for model in self.model_list:
             mtm = list(model._meta.manytomany.values())

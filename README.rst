@@ -85,3 +85,4 @@ TODO
 10. 对于 unique key，应该禁止插入相同的数据，但不应该500
 11. 支持 mini_json，该方法不处理 ApiMethodField 和 ApiManyToManyField
 12. 支持自定义 serialize
+13. ApiFileIDField 字段支持搜索（仅针对文本文件或字符串）

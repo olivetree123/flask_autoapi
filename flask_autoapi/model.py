@@ -252,6 +252,15 @@ class ApiModel(Model):
     #     )
     #     setattr(cls, "storage", storage)
 
+    # @classmethod
+    # def add_full_text_research(cls, obj):
+    #     document = {"id": getattr(obj, cls._meta.primary_key)}
+    #     field_names = cls._meta.full_text_research_fields
+    #     for field_name in field_names:
+    #         document[field_name] = getattr(obj, field_name)
+    #     print("document = ", document)
+    #     writer.add_document(**document)
+
     @classmethod
     def validate(cls, **params):
         """
@@ -267,6 +276,14 @@ class ApiModel(Model):
         用于 POST/PUT 方法。
         做一些自定义操作，但是不能修改参数。
         修改参数应该使用各个Field 的 in_handler。
+        """
+        return True
+    
+    @classmethod
+    def diy_after_save(cls, obj):
+        """
+        用于 POST/PUT 方法。
+        create/save/update 之后，自定义操作。
         """
         return True
     

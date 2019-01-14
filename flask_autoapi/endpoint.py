@@ -106,6 +106,7 @@ class BaseEndpoint(Resource):
             return APIResponse(BAD_REQUEST)
         self.Model.diy_before_save(**params)
         r = self.Model.create(**params)
+        self.Model.diy_after_save(r)
         r.mtom(**params)
         r.get_method_fields()
         r = self.Model.to_json(r) if r else None
@@ -160,6 +161,7 @@ class BaseEndpoint(Resource):
             return APIResponse(BAD_REQUEST)
         self.Model.diy_before_save(**params)
         r = self.Model.update_by_pk(id, **params)
+        self.Model.diy_after_save(r)
         r.mtom(**params)
         r.get_method_fields()
         r = self.Model.to_json(r) if r else None
