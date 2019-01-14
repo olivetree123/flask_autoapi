@@ -22,14 +22,14 @@ def str_align(word, length=10):
 
 def get_example(tp, choices=None):
     if choices:
-        return '"'+choices[0][0]+'"'
+        return choices[0][0]
     if tp == "uuid":
-        return '"'+str(uuid.uuid4())+'"'
+        return str(uuid.uuid4())
     if tp == "string":
-        return '"123456"'
+        return "123456"
     if tp == "datetime":
         t = datetime.now()
-        return '"'+datetime_to_str(t)+'"'
+        return datetime_to_str(t)
     if tp in ("int", "float", "double", "decimal"):
         return 12
     if tp == "bool":
@@ -39,20 +39,29 @@ def get_example(tp, choices=None):
 def is_mtom(field):
     return isinstance(field, peewee.ManyToManyField)
 
+def is_foreign(field):
+    return isinstance(field, peewee.ForeignKeyField)
+
 def mtom_fields(field):
     model = field.rel_model
     fields = model.get_fields()
     # fields = model.get_fields() + list(model._meta.manytomany.values())
     return fields
 
+def foreign_fields(field):
+    model = field.rel_model
+    fields = model.get_fields()
+    return fields
+
 def method_field_example(field):
     if not field.field_type == "METHOD":
         return None
     r = field.method_class.get_example()
-    if not isinstance(r, (list, tuple, dict)):
-        return r
-    r = json.dumps(r, sort_keys=True, indent=4)
-    result = ""
-    for line in r.split("\n"):
-        result += "\n                " + line
-    return result
+    # if not isinstance(r, (list, tuple, dict)):
+    #     return r
+    # r = json.dumps(r, sort_keys=True, indent=4)
+    # result = ""
+    # for line in r.split("\n"):
+    #     result += "\n                " + line
+    # return result
+    return r

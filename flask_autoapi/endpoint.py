@@ -24,28 +24,7 @@ class BaseEndpoint(Resource):
         @apiGroup {{Group}}
 
         @apiExample 返回值
-        {
-            "code": 0,
-            "message":"",
-            "data":{ 
-                {% for field in AllFields -%}
-                {{ str_align('"'+field.name+'"') }}: \t 
-                {%- if is_mtom(field) is sameas false -%} 
-                    {%- if field.field_type == "METHOD" -%} 
-                        {{method_field_example(field)}} 
-                    {%- else -%}
-                        {{get_example(standard_type(field.field_type), field.choices)}} 
-                    {%- endif -%}
-                    {% if field.verbose_name %} \t # {{field.verbose_name}} {% endif %} 
-                {% else %} 
-                [
-                    { {% for f in mtom_fields(field) %} 
-                        {{ str_align('"'+f.name+'"') }}:{{get_example(standard_type(f.field_type), f.choices)}}{% endfor %}
-                    }
-                ]
-                {% endif -%} {% endfor %}
-            }
-        }
+{{ DATA}}
 
         """
         without_fields = request.args.get("without_fields")
@@ -71,28 +50,7 @@ class BaseEndpoint(Resource):
         
 
         @apiExample 返回值
-        {
-            "code": 0,
-            "message":"",
-            "data":{ 
-                {% for field in AllFields -%}
-                {{ str_align('"'+field.name+'"') }}: \t 
-                {%- if is_mtom(field) is sameas false -%} 
-                    {%- if field.field_type == "METHOD" -%} 
-                        {{method_field_example(field)}} 
-                    {%- else -%}
-                        {{get_example(standard_type(field.field_type), field.choices)}} 
-                    {%- endif -%}
-                    {% if field.verbose_name %} \t # {{field.verbose_name}} {% endif %} 
-                {% else %} 
-                [
-                    { {% for f in mtom_fields(field) %} 
-                        {{ str_align('"'+f.name+'"') }}:{{get_example(standard_type(f.field_type), f.choices)}}{% endfor %}
-                    }
-                ]
-                {% endif -%} {% endfor %}
-            }
-        }
+{{ DATA}}
         """
         params = request.get_json() if request.content_type == "application/json" else request.form.to_dict()
         params.update(request.files.to_dict())
@@ -125,28 +83,7 @@ class BaseEndpoint(Resource):
         {{ str_align(standard_type(field.field_type))}} \t {{ str_align(field.name, 15) }}  # {% if field.null is sameas true %} 非必填项 {% else %} 必填项 {% endif %} {% if field.verbose_name %}, {{field.verbose_name}} {% endif %}{% endfor %}
 
         @apiExample 返回值
-        {
-            "code": 0,
-            "message":"",
-            "data":{ 
-                {% for field in AllFields -%}
-                {{ str_align('"'+field.name+'"') }}: \t 
-                {%- if is_mtom(field) is sameas false -%} 
-                    {%- if field.field_type == "METHOD" -%} 
-                        {{method_field_example(field)}} 
-                    {%- else -%}
-                        {{get_example(standard_type(field.field_type), field.choices)}} 
-                    {%- endif -%}
-                    {% if field.verbose_name %} \t # {{field.verbose_name}} {% endif %} 
-                {% else %} 
-                [
-                    { {% for f in mtom_fields(field) %} 
-                        {{ str_align('"'+f.name+'"') }}:{{get_example(standard_type(f.field_type), f.choices)}}{% endfor %}
-                    }
-                ]
-                {% endif -%} {% endfor %}
-            }
-        }
+{{ DATA}}
         
         """
         params = request.get_json() if request.content_type == "application/json" else request.form.to_dict()
@@ -211,30 +148,7 @@ class BaseListEndpoint(Resource):
         int    order   # 排序方法。非必填，默认0。0表示按时间倒序，1表示按时间顺序。
 
         @apiExample 返回值
-        {
-            "code": 0,
-            "message": null,
-            "data": [
-                {
-                    {% for field in AllFields -%}
-                    {{ str_align('"'+field.name+'"') }}: \t 
-                    {%- if is_mtom(field) is sameas false -%} 
-                        {%- if field.field_type == "METHOD" -%} 
-                            {{method_field_example(field)}} 
-                        {%- else -%}
-                            {{get_example(standard_type(field.field_type), field.choices)}} 
-                        {%- endif -%}
-                        {% if field.verbose_name %} \t # {{field.verbose_name}} {% endif %} 
-                    {% else %} 
-                    [
-                        { {% for f in mtom_fields(field) %} 
-                            {{ str_align('"'+f.name+'"') }}:{{get_example(standard_type(f.field_type), f.choices)}}{% endfor %}
-                        }
-                    ]
-                    {% endif -%} {% endfor %}
-                }
-            ],
-        }
+{{LIST_DATA}}
         """
         args = request.args.to_dict()
         try:

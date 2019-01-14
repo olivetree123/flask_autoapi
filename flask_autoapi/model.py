@@ -143,11 +143,11 @@ class ApiModel(Model):
 
     @classmethod
     def format_params(cls, **params):
-        all_field_names = cls.get_all_field_names()
-        for key in list(params.keys()):
-            if key in all_field_names:
-                continue
-            params.pop(key)
+        # all_field_names = cls.get_all_field_names()
+        # for key in list(params.keys()):
+        #     if key in all_field_names:
+        #         continue
+        #     params.pop(key)
         # 格式化参数，主要是将 str 转换成 file 对象
         fields = cls.get_fields()
         for field in fields:
@@ -251,15 +251,6 @@ class ApiModel(Model):
     #         qiniu_bucket_url = cls._meta.qiniu_bucket_url,
     #     )
     #     setattr(cls, "storage", storage)
-
-    # @classmethod
-    # def add_full_text_research(cls, obj):
-    #     document = {"id": getattr(obj, cls._meta.primary_key)}
-    #     field_names = cls._meta.full_text_research_fields
-    #     for field_name in field_names:
-    #         document[field_name] = getattr(obj, field_name)
-    #     print("document = ", document)
-    #     writer.add_document(**document)
 
     @classmethod
     def validate(cls, **params):
