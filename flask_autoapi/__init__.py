@@ -26,8 +26,8 @@ class AutoAPI(object):
         self.project_name = project_name if project_name else os.getcwd().split("/")[-1]
         if not self.project_name:
             raise Exception("project_name 不能为空，需要使用 project_name 作为 URL 前缀")
-        self.app.add_url_rule("/docs/", "docs", self._static_file, strict_slashes=True)
-        self.app.add_url_rule("/docs/<path:path>", "docs", self._static_file, strict_slashes=True)
+        self.app.add_url_rule("/docs/", "docs", self._static_file, strict_slashes=False)
+        self.app.add_url_rule("/docs/<path:path>", "docs", self._static_file, strict_slashes=False)
         self._add_decorators(decorator_list)
         self._auto_urls()
         self.api.init_app(self.app)
@@ -40,7 +40,7 @@ class AutoAPI(object):
             func = self.api.output(resource.as_view(endpoint))
             self._del_exists_endpoint(endpoint)
             for url in urls:
-                self.app.add_url_rule(url, endpoint, func, strict_slashes=True)
+                self.app.add_url_rule(url, endpoint, func, strict_slashes=False)
         else:
             self._lazy_resources.append((resource, *urls))
     
