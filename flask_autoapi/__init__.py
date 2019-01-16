@@ -1,5 +1,6 @@
 # 获取所有的 docstring，生成 doc
 import os
+from copy import copy
 from flask_restful import Api
 
 from flask_autoapi.model import ApiModel
@@ -69,11 +70,15 @@ class AutoAPI(object):
             class_name = model.__name__ + "Endpoint"
             endpoint = type(class_name, (BaseEndpoint, ), {})
             endpoint.Model = model
+            endpoint.decorators = copy(BaseEndpoint.decorators)
+            endpoint.add_decorators(model._meta.api_decorator_list)
             endpoints.append(endpoint)
 
             class_name = model.__name__ + "ListEndpoint"
             endpoint = type(class_name, (BaseListEndpoint, ), {})
             endpoint.Model = model
+            endpoint.decorators = copy(BaseListEndpoint.decorators)
+            endpoint.add_decorators(model._meta.list_api_decorator_list)
             endpoints.append(endpoint)
         
         for endpoint in endpoints:

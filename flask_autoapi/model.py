@@ -313,6 +313,8 @@ class ApiModel(Model):
         verbose_name = ""
         # filter_fields 用于指定 list 接口的参数
         filter_fields = ()
+        api_decorator_list = ()
+        list_api_decorator_list = ()
         # storage 是 Storage 的对象
         storage = None
         # store_kind 指定文件存储的方式，支持 file/minio/qiniu
