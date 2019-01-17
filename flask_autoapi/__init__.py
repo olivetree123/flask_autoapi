@@ -84,7 +84,6 @@ class AutoAPI(object):
             endpoints.append(endpoint)
         
         for endpoint in endpoints:
-            print(endpoint, endpoint.method_decorators)
             if endpoint.Type:
                 url = "/".join(["", self.project_name.lower(), endpoint.Model.__name__.lower(), endpoint.Type.lower(), ""])
                 self.api.add_resource(endpoint, url, endpoint=endpoint.__name__.lower(), strict_slashes=False)

@@ -9,6 +9,7 @@ class BaseEndpoint(Resource):
 
     Model = None
     Type = None
+    # 由于 method_decorators 是内层装饰器，比 decorators 先起作用，所以一律使用 method_decorators
     decorators = []
     method_decorators = {
         "get":      [marshal_with(resource_fields)], 
@@ -147,7 +148,14 @@ class BaseListEndpoint(Resource):
 
     Model = None
     Type = "List"
-    decorators = [marshal_with(resource_fields)]
+    decorators = []
+    method_decorators = {
+        "get":      [marshal_with(resource_fields)], 
+        "put":      [marshal_with(resource_fields)],
+        "post":     [marshal_with(resource_fields)],
+        "delete":   [marshal_with(resource_fields)],
+        "options":  [marshal_with(resource_fields)],
+    }
 
     @classmethod
     def add_decorators(cls, decorator_list):
