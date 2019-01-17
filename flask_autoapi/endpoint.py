@@ -9,13 +9,31 @@ class BaseEndpoint(Resource):
 
     Model = None
     Type = None
-    decorators = [marshal_with(resource_fields)]
+    decorators = []
+    method_decorators = {
+        "get":      [marshal_with(resource_fields)], 
+        "put":      [marshal_with(resource_fields)],
+        "post":     [marshal_with(resource_fields)],
+        "delete":   [marshal_with(resource_fields)],
+        "options":  [marshal_with(resource_fields)],
+    }
 
     @classmethod
     def add_decorators(cls, decorator_list):
+        if not decorator_list:
+            return
         if not isinstance(decorator_list, (list, tuple)):
-            raise Exception("格式错误")
+            raise Exception("TypeError, decorator_list should be list or tuple, but {} found".format(type(decorator_list)))
         cls.decorators += decorator_list
+    
+    @classmethod
+    def add_method_decorators(cls, method_decorators):
+        if not method_decorators:
+            return
+        if not isinstance(method_decorators, dict):
+            raise Exception("TypeError, method_decorators should be dict, but {} found, endpoint = {}".format(type(method_decorators), cls))
+        for key, value in method_decorators.items():
+            cls.method_decorators[key] += value
 
     def get(self, id):
         """
@@ -51,6 +69,7 @@ class BaseEndpoint(Resource):
 
         @apiExample 返回值
 {{ DATA}}
+
         """
         params = request.get_json() if request.content_type == "application/json" else request.form.to_dict()
         params.update(request.files.to_dict())
@@ -132,9 +151,20 @@ class BaseListEndpoint(Resource):
 
     @classmethod
     def add_decorators(cls, decorator_list):
+        if not decorator_list:
+            return
         if not isinstance(decorator_list, (list, tuple)):
             raise Exception("格式错误")
         cls.decorators += decorator_list
+    
+    @classmethod
+    def add_method_decorators(cls, method_decorators):
+        if not method_decorators:
+            return
+        if not isinstance(method_decorators, dict):
+            raise Exception("TypeError, method_decorators should be dict, but {} found".format(type(method_decorators)))
+        for key, value in method_decorators.items():
+            cls.method_decorators[key] += value
 
     def get(self):
         """

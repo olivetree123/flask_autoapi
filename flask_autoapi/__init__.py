@@ -72,6 +72,7 @@ class AutoAPI(object):
             endpoint.Model = model
             endpoint.decorators = copy(BaseEndpoint.decorators)
             endpoint.add_decorators(model._meta.api_decorator_list)
+            endpoint.add_method_decorators(model._meta.api_method_decorators)
             endpoints.append(endpoint)
 
             class_name = model.__name__ + "ListEndpoint"
@@ -79,9 +80,11 @@ class AutoAPI(object):
             endpoint.Model = model
             endpoint.decorators = copy(BaseListEndpoint.decorators)
             endpoint.add_decorators(model._meta.list_api_decorator_list)
+            endpoint.add_method_decorators(model._meta.list_api_method_decorators)
             endpoints.append(endpoint)
         
         for endpoint in endpoints:
+            print(endpoint, endpoint.method_decorators)
             if endpoint.Type:
                 url = "/".join(["", self.project_name.lower(), endpoint.Model.__name__.lower(), endpoint.Type.lower(), ""])
                 self.api.add_resource(endpoint, url, endpoint=endpoint.__name__.lower(), strict_slashes=False)
