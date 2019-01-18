@@ -2,7 +2,7 @@ import math
 from flask import request
 from flask_restful import Resource, marshal_with
 
-from flask_autoapi.utils.response import APIResponse, resource_fields
+from flask_autoapi.utils.response import JsonResponse, resource_fields
 from flask_autoapi.utils.message import BAD_REQUEST, OBJECT_SAVE_FAILED
 
 class BaseEndpoint(Resource):
@@ -50,12 +50,12 @@ class BaseEndpoint(Resource):
         without_fields = without_fields.split(",") if without_fields else None
         r = self.Model.get_with_pk(id, without_fields)
         if not r:
-            return APIResponse()
+            return JsonResponse()
         r.get_method_fields()
         r = self.Model.to_json(r, without_fields) if r else None
         r = self.Model.out_handlers(**r)
         r = self.Model.diy_after_get(**r)
-        return APIResponse(data=r)
+        return JsonResponse(data=r)
     
     def post(self):
         """
@@ -78,10 +78,10 @@ class BaseEndpoint(Resource):
         params = self.Model.format_params(**params)
         status = self.Model.verify_params(**params)
         if not status:
-            return APIResponse(BAD_REQUEST)
+            return JsonResponse(BAD_REQUEST)
         params = self.Model.upload_files(**params)
         if not self.Model.validate(**params):
-            return APIResponse(BAD_REQUEST)
+            return JsonResponse(BAD_REQUEST)
         self.Model.diy_before_save(**params)
         r = self.Model.create(**params)
         self.Model.diy_after_save(r)
@@ -90,7 +90,7 @@ class BaseEndpoint(Resource):
         r = self.Model.to_json(r) if r else None
         r = self.Model.out_handlers(**r)
         r = self.Model.diy_after_get(**r)
-        return APIResponse(data=r)
+        return JsonResponse(data=r)
     
     def put(self, id):
         """
@@ -112,10 +112,10 @@ class BaseEndpoint(Resource):
         params = self.Model.format_params(**params)
         status = self.Model.verify_params(**params)
         if not status:
-            return APIResponse(BAD_REQUEST)
+            return JsonResponse(BAD_REQUEST)
         params = self.Model.upload_files(**params)
         if not self.Model.validate(**params):
-            return APIResponse(BAD_REQUEST)
+            return JsonResponse(BAD_REQUEST)
         self.Model.diy_before_save(**params)
         r = self.Model.update_by_pk(id, **params)
         self.Model.diy_after_save(r)
@@ -124,7 +124,7 @@ class BaseEndpoint(Resource):
         r = self.Model.to_json(r) if r else None
         r = self.Model.out_handlers(**r)
         r = self.Model.diy_after_get(**r)
-        return APIResponse(data=r)
+        return JsonResponse(data=r)
     
     def delete(self, id):
         """
@@ -141,7 +141,7 @@ class BaseEndpoint(Resource):
         
         """
         self.Model.delete().where(self.Model._meta.primary_key == id).execute()
-        return APIResponse()
+        return JsonResponse()
 
 
 class BaseListEndpoint(Resource):
@@ -176,13 +176,13 @@ class BaseListEndpoint(Resource):
 
     def get(self):
         """
-        @api {GET} /{{project_name}}/{{ModelName.lower()}}/list?page=2&num=10&order=0 获取{{Title}}列表
+        @api {GET} /{{project_name}}/{{ModelName.lower()}}/list?page=2&page_size=10&order=0 获取{{Title}}列表
         @apiName Get{{ModelName}}List
         @apiGroup {{Group}}
 
         @apiExample 参数
         int    page    # 页码。非必填，默认1。
-        int    num     # 每页数量。非必填，默认10。
+        int    page_size     # 每页数量。非必填，默认10。
         int    order   # 排序方法。非必填，默认0。0表示按时间倒序，1表示按时间顺序。
 
         @apiExample 返回值
@@ -191,12 +191,12 @@ class BaseListEndpoint(Resource):
         args = request.args.to_dict()
         try:
             page  = int(args.get("page", 1))
-            num   = int(args.get("num", 10))
+            page_size   = int(args.get("page_size", 10))
             order = int(args.get("order", 0))
         except:
-            return APIResponse(BAD_REQUEST)
+            return JsonResponse(BAD_REQUEST)
         if not order in (0, 1):
-            return APIResponse(BAD_REQUEST)
+            return JsonResponse(BAD_REQUEST)
         args = self.Model.verify_list_args(**args)
         without_fields = request.args.get("without_fields")
         without_fields = without_fields.split(",") if without_fields else None
@@ -217,15 +217,15 @@ class BaseListEndpoint(Resource):
                 result = result.where(getattr(self.Model, key) == value)
         result = result.order_by(self.Model.create_time.desc()) if order == 0 else result.order_by(self.Model.create_time.asc())
         total_count = result.count()
-        result = result.offset((page-1)*num).limit(num)
+        result = result.offset((page-1)*page_size).limit(page_size)
         result = [self.Model.to_json(r.get_method_fields(), without_fields) for r in result] if result else None
         result = [self.Model.out_handlers(**r) for r in result] if result else None
         result = [self.Model.diy_after_get(**r) for r in result] if result else None
         result = {
-            "num":num,
-            "count": total_count,
+            "page_size":page_size,
+            "total": total_count,
             "page": page,
             "result":result
         }
-        return APIResponse(data=result)
+        return JsonResponse(data=result)
         

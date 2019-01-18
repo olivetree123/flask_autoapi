@@ -12,7 +12,7 @@ class GenerateDoc(Command):
     def __init__(self, model_list, diy_endpoint_list=None, static_folder="static"):
         self.static_folder = static_folder
         self.model_list = model_list
-        self.diy_endpoint_list = diy_endpoint_list
+        self.diy_endpoint_list = diy_endpoint_list if diy_endpoint_list else []
         self.docs_folder = os.path.join(self.static_folder, "docs")
 
     def run(self, project_name=""):

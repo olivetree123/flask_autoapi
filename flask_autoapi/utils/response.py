@@ -8,7 +8,7 @@ resource_fields = {
     "data" : fields.Raw(default=None)
 }
 
-class APIResponse(object):
+class JsonResponse(object):
 
     def __init__(self, code=0, message="", data=None):
         if not message:

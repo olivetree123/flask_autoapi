@@ -1,6 +1,6 @@
 # 获取所有的 docstring，生成 doc
 import os
-from copy import copy
+from copy import copy, deepcopy
 from flask_restful import Api
 
 from flask_autoapi.model import ApiModel
@@ -48,10 +48,7 @@ class AutoAPI(object):
     def _del_exists_endpoint(self, endpoint):
         if self.app.view_functions.get(endpoint):
             del self.app.view_functions[endpoint]
-            for i in range(len(self.app.url_map._rules)):
-                if self.app.url_map._rules[i].endpoint == endpoint:
-                    del self.app.url_map._rules[i]
-                    break
+            self.app.url_map._rules = [rule for rule in self.app.url_map._rules if rule.endpoint != endpoint]
     
     def _static_file(self, path=None):
         if not path:
@@ -71,6 +68,7 @@ class AutoAPI(object):
             endpoint = type(class_name, (BaseEndpoint, ), {})
             endpoint.Model = model
             endpoint.decorators = copy(BaseEndpoint.decorators)
+            endpoint.method_decorators = deepcopy(BaseEndpoint.method_decorators)
             endpoint.add_decorators(model._meta.api_decorator_list)
             endpoint.add_method_decorators(model._meta.api_method_decorators)
             endpoints.append(endpoint)
@@ -79,6 +77,7 @@ class AutoAPI(object):
             endpoint = type(class_name, (BaseListEndpoint, ), {})
             endpoint.Model = model
             endpoint.decorators = copy(BaseListEndpoint.decorators)
+            endpoint.method_decorators = deepcopy(BaseListEndpoint.method_decorators)
             endpoint.add_decorators(model._meta.list_api_decorator_list)
             endpoint.add_method_decorators(model._meta.list_api_method_decorators)
             endpoints.append(endpoint)
