@@ -313,6 +313,8 @@ class ApiModel(Model):
         verbose_name = ""
         # filter_fields 用于指定 list 接口的参数
         filter_fields = ()
+        # api_methods = ("GET", "POST", "PUT", "DELETE", "LIST")
+        api_methods = ()
         api_decorator_list = ()
         api_method_decorators = None
         list_api_decorator_list = ()

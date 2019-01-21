@@ -9,9 +9,9 @@ from flask_autoapi.utils.cmd import sys_apidoc
 from flask_autoapi.endpoint import BaseEndpoint, BaseListEndpoint
 
 class GenerateDoc(Command):
-    def __init__(self, model_list, diy_endpoint_list=None, static_folder="static"):
+    def __init__(self, doc_model_list, diy_endpoint_list=None, static_folder="static"):
         self.static_folder = static_folder
-        self.model_list = model_list
+        self.doc_model_list = doc_model_list
         self.diy_endpoint_list = diy_endpoint_list if diy_endpoint_list else []
         self.docs_folder = os.path.join(self.static_folder, "docs")
 
@@ -20,23 +20,36 @@ class GenerateDoc(Command):
         if not os.path.exists(self.static_folder):
             os.makedirs(self.static_folder)
         docs = [
-            BaseEndpoint.get.__doc__, 
-            BaseEndpoint.post.__doc__, 
-            BaseEndpoint.put.__doc__, 
-            BaseEndpoint.delete.__doc__,
-            BaseListEndpoint.get.__doc__,
+            {
+                "method": "get",
+                "content": BaseEndpoint.get.__doc__, 
+            },
+            {
+                "method": "post",
+                "content": BaseEndpoint.post.__doc__, 
+            },
+            {
+                "method": "put",
+                "content": BaseEndpoint.put.__doc__, 
+            },
+            {
+                "method": "delete",
+                "content": BaseEndpoint.delete.__doc__, 
+            },
+            {
+                "method": "list",
+                "content": BaseListEndpoint.get.__doc__, 
+            },
         ]
-        for endpoint in self.diy_endpoint_list:
-            if hasattr(endpoint, "get"):
-                docs.append(endpoint.get.__doc__, )
-            if hasattr(endpoint, "post"):
-                docs.append(endpoint.post.__doc__, )
-            if hasattr(endpoint, "put"):
-                docs.append(endpoint.put.__doc__, )
-            if hasattr(endpoint, "delete"):
-                docs.append(endpoint.delete.__doc__, )
+
         f = open(os.path.join(self.static_folder, "doc.py"), "w+")
-        for model in self.model_list:
+        for endpoint in self.diy_endpoint_list:
+            for method in ["get", "post", "put", "delete"]:
+                if hasattr(endpoint, method):
+                    content = getattr(getattr(endpoint, method), "__doc__")
+                    f.write('"""'+content+'\n"""\n')
+        
+        for model in self.doc_model_list:
             mtm = list(model._meta.manytomany.values())
             for m in mtm:
                 print(m, m.name, type(m), isinstance(m, peewee.ManyToManyField), m.rel_model)
@@ -53,10 +66,11 @@ class GenerateDoc(Command):
                 "message":"",
                 "data": [r]
             }
+            model._meta.api_methods = [method.upper() for method in model._meta.api_methods]
             for doc in docs:
-                if not doc:
+                if not (doc.get("content") and doc["method"].upper() in model._meta.api_methods):
                     continue
-                template = Template(doc)
+                template = Template(doc.get("content"))
                 content = template.render(
                     Fields=fields,
                     # AllFields=all_fields,

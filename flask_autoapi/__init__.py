@@ -64,9 +64,16 @@ class AutoAPI(object):
     def _auto_urls(self):
         endpoints = []
         for model in self.model_list:
+            print("model = ", model)
+            # model._meta.api_methods = [method.upper() for method in model._meta.api_methods]
             class_name = model.__name__ + "Endpoint"
             endpoint = type(class_name, (BaseEndpoint, ), {})
             endpoint.Model = model
+            # 无法删除父类的方法，暂时不删除，不给文档即可
+            # for method in ["GET", "POST", "PUT", "DELETE"]:
+            #     if method not in model._meta.api_methods:
+            #         delattr(endpoint, method.lower())
+            #         print("del method ", method)
             endpoint.decorators = copy(BaseEndpoint.decorators)
             endpoint.method_decorators = deepcopy(BaseEndpoint.method_decorators)
             endpoint.add_decorators(model._meta.api_decorator_list)
