@@ -13,6 +13,22 @@ API 接口基于 flask_restful 和 peewee，文档使用 ApiDoc 生成。
     pip install flask-autoapi
 
 
+ApiModel 实现的方法
+=============
+::
+    def get_with_pk(cls, pk_value, without_field_names=None):
+        pass
+        
+    def verify_params(cls, **params):
+        # 返回 True or False
+        pass
+
+    def update_by_pk(cls, pk_value, **params):
+        pass
+
+    def to_json(cls, obj, without_fields=None, datetime_format="%Y-%m-%d %H:%M:%S"):
+        pass
+
 存储
 =============
 FileIDField 可以自动处理请求中的文件，你只需要在 Model 的 Meta中配置好存储的方式。建议在模型基类中进行配置。
@@ -23,28 +39,12 @@ FileIDField 可以自动处理请求中的文件，你只需要在 Model 的 Met
 
 存储配置方式
 ::
+    from flask_autoapi.storage import Storage
 
     class BaseModel(ApiModel):
         class Meta:
             database = db     
-            # 文件存储配置
-            # store_kind = "file"
-            # 在文件存储中，bucket 为文件夹路径
-            # bucket = "/Users/gao/code/iLearning"
-
-            # minio 存储配置        
-            bucket = "blog"
-            minio_url = ""
-            minio_access_key = ""
-            minio_secret_key = ""
-
-            # qiniu 存储配置
-            # store_kind = "qiniu"
-            # bucket = "blog"
-            # qiniu_url = ""
-            # qiniu_access_key = ""
-            # qiniu_secret_key = ""
-            # qiniu_bucket_url = ""
+            storage = Storage()
 
 
 
