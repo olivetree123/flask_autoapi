@@ -14,11 +14,12 @@ API 接口基于 flask_restful 和 peewee，文档使用 ApiDoc 生成。
 
 
 ApiModel 实现的方法
-=============
+=====================
 ::
+
     def get_with_pk(cls, pk_value, without_field_names=None):
         pass
-        
+
     def verify_params(cls, **params):
         # 返回 True or False
         pass
@@ -39,6 +40,7 @@ FileIDField 可以自动处理请求中的文件，你只需要在 Model 的 Met
 
 存储配置方式
 ::
+
     from flask_autoapi.storage import Storage
 
     class BaseModel(ApiModel):
