@@ -76,14 +76,14 @@ FileIDField 可以自动处理请求中的文件，你只需要在 Model 的 Met
 TODO  
 =============
 1. 存储分离出去  
-2. EndPiont 重载    √  
-3. 允许修改字段的值   √
-4. 返回时过滤掉不需要的字段     √  
-5. 有些字段不需要出现在文档上   √  
-6. MethodField     √
-7. list 接口分页    √
+2. EndPiont 重载(Done)  
+3. 允许修改字段的值(Done)
+4. 返回时过滤掉不需要的字段(Done)
+5. 有些字段不需要出现在文档上(Done)  
+6. MethodField(Done)
+7. list 接口分页(Done)
 8. 记录所有 POST/PUT/DELETE 操作的日志
-9. 入库之前，用户可能需要有自定义的操作     √
+9. 入库之前，用户可能需要有自定义的操作(Done)
 10. 对于 unique key，应该禁止插入相同的数据，但不应该500
 11. 支持 mini_json，该方法不处理 ApiMethodField 和 ApiManyToManyField
 12. 支持自定义 serialize
