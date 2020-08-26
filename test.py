@@ -4,7 +4,7 @@ from peewee import MySQLDatabase
 from peewee import CharField, BooleanField, IntegerField
 
 from flask_autoapi import AutoAPI
-from flask_autoapi.model import ApiModel, FileIDField
+from flask_autoapi.model import ApiModel
 from flask_autoapi.command import GenerateDoc
 
 
@@ -13,7 +13,7 @@ db = MySQLDatabase(
     host="localhost", 
     port=3306, 
     user="root", 
-    password="gaojian"
+    password="1q2w3e"
 )
 
 class Album(ApiModel):
@@ -21,8 +21,7 @@ class Album(ApiModel):
     desc      = CharField(null=True, verbose_name="说明")
     cover     = CharField(null=True, verbose_name="封面")
     dirname   = CharField(null=True, verbose_name="存储目录")
-    file_id   = FileIDField(null=True)
-
+    
     @staticmethod
     def name_in_hander(content):
         return content+"gaojian"
@@ -36,22 +35,6 @@ class Album(ApiModel):
         # filter_fields 用于指定 list 接口的参数
         filter_fields = ("dirname", "name", )
 
-        # 文件存储配置
-        store_kind = "qiniu"
-        bucket = "gaojian"
-
-        # minio 配置
-        # store_kind = "minio"
-        # minio_url = ""
-        # minio_bucket = ""
-        # minio_access_key = ""
-        # minio_secret_key = ""
-
-        # qiniu 配置
-        # store_kind = "qiniu"
-        # qiniu_url = ""
-        # qiniu_access_key = ""
-        # qiniu_secret_key = ""
 
 
 MODEL_LIST = [Album, ]
