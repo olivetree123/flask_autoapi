@@ -1,7 +1,9 @@
 =============
-Flask AutoAPI
+flask-autoapi
 =============
-Flask AutoAPI 是一个 flask 扩展，根据模型自动生成 API 接口和文档。
+A framework based on flask_restful and peewee.  
+
+It could create API and Doc automatically with ORM Model.
 
 
 Install
