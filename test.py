@@ -23,9 +23,9 @@ class Album(ApiModel):
     dirname   = CharField(null=True, verbose_name="存储目录")
     
     @staticmethod
-    def name_in_hander(content):
-        return content+"gaojian"
-
+    def name_in_handler(content):
+        # 示例：如何自定义处理字段
+        return content+"-olivetree"
 
     class Meta:
         database = db
@@ -39,6 +39,7 @@ class Album(ApiModel):
 
 MODEL_LIST = [Album, ]
 db.create_tables(MODEL_LIST)
+
 
 if __name__ == "__main__":
     app = Flask(__name__)
