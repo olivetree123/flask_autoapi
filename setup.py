@@ -47,7 +47,7 @@ setup(
     long_description=LONG_DESCRIPTION,
     classifiers=[
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python3',
+        'Programming Language :: Python',
         'Intended Audience :: Developers',
         'Operating System :: OS Independent',
     ],
