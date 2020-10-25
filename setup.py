@@ -6,9 +6,6 @@ try:
     from setuptools import setup
 except:
     from distutils.core import setup
-"""
-打包的用的setup必须引入，
-"""
 
 
 def read(fname):
@@ -24,54 +21,24 @@ def read(fname):
 
 
 NAME = "flask_autoapi"
-"""
-名字，一般放你包的名字即可
-"""
 
 PACKAGES = ["flask_autoapi", "flask_autoapi.storage", "flask_autoapi.utils"]
-"""
-包含的包，可以多个，这是一个列表
-"""
 
 DESCRIPTION = "根据模型自动生成 API 接口和文档"
-"""
-关于这个包的描述
-"""
 
 LONG_DESCRIPTION = read("README.rst")
-"""
-参见read方法说明
-"""
 
 KEYWORDS = "flask api autoapi"
-"""
-关于当前包的一些关键字，方便PyPI进行分类。
-"""
 
-AUTHOR = "Gaojian"
-"""
-谁是这个包的作者，写谁的名字吧
-"""
+AUTHOR = "olivetree"
 
 AUTHOR_EMAIL = "olivetree123@163.com"
-"""
-作者的邮件地址
-"""
 
 URL = "https://github.com/olivetree123/flask_autoapi"
-"""
-你这个包的项目地址，如果有，给一个吧，没有你直接填写在PyPI你这个包的地址也是可以的
-"""
 
-VERSION = "0.8.23"
-"""
-当前包的版本，这个按你自己需要的版本控制方式来
-"""
+VERSION = "0.9.0"
 
 LICENSE = "MIT"
-"""
-授权方式，我喜欢的是MIT的方式，你可以换成其他方式
-"""
 
 setup(
     name=NAME,
@@ -80,7 +47,7 @@ setup(
     long_description=LONG_DESCRIPTION,
     classifiers=[
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python',
+        'Programming Language :: Python3',
         'Intended Audience :: Developers',
         'Operating System :: OS Independent',
     ],
