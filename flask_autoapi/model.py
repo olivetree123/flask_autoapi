@@ -112,7 +112,7 @@ class ApiModel(Model):
             handler = getattr(cls, field.in_handler)
             if not (handler and isinstance(handler, types.MethodType)):
                 raise Exception("in_handler should be function, but {} found.".format(type(handler)))
-            params[field.name] = handler(params.get(field.name))
+            params[field.name] = handler(params.get(field.name), **params)
             if field.name in cls._meta.manytomany:
                 params[field.name+"_value"] = params.pop(field.name)
         return params
@@ -313,8 +313,8 @@ class ApiModel(Model):
         verbose_name = ""
         # filter_fields 用于指定 list 接口的参数
         filter_fields = ()
-        # api_methods = ("GET", "POST", "PUT", "DELETE", "LIST")
-        api_methods = ()
+        api_methods = ("GET", "POST", "PUT", "DELETE", "LIST")
+        # api_methods = ()
         api_decorator_list = ()
         api_method_decorators = None
         list_api_decorator_list = ()
