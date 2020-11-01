@@ -6,6 +6,7 @@ from copy import copy, deepcopy
 from flask_restful import Api
 
 from flask_autoapi.model import ApiModel
+from flask_autoapi.form.param import Param
 from flask_autoapi.endpoint import BaseEndpoint, BaseListEndpoint
 
 
