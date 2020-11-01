@@ -10,10 +10,16 @@ resource_fields = {
 
 class JsonResponse(object):
 
+    msg = MESSAGE
+
     def __init__(self, code=0, message="", data=None):
         if not message:
-            message = MESSAGE.get(code)
+            message = self.msg.get(code)
         self.code = code
-        self.message = message
         self.data = data
+        self.message = message
+    
+    @classmethod
+    def set_msg(cls, msg):
+        cls.msg = msg
 

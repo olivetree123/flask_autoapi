@@ -32,8 +32,7 @@ class GenerateDoc(Command):
         self.diy_endpoint_list = diy_endpoint_list if diy_endpoint_list else []
         self.docs_folder = os.path.join(self.static_folder, "docs")
 
-    def run(self, project_name=""):
-        project_name = project_name if project_name else os.getcwd().split("/")[-1].lower()
+    def run(self):
         if not os.path.exists(self.static_folder):
             os.makedirs(self.static_folder)
         docs = [
@@ -94,9 +93,6 @@ class GenerateDoc(Command):
                 f.write('"""'+content+'\n"""\n')
         
         for model in self.doc_model_list:
-            mtm = list(model._meta.manytomany.values())
-            for m in mtm:
-                print(m, m.name, type(m), isinstance(m, peewee.ManyToManyField), m.rel_model)
             fields = model.get_display_fields()
             all_fields = model.get_fields() + list(model._meta.manytomany.values()) + list(model._meta.method_fields.values())
             r = get_model_example(model)
@@ -124,7 +120,7 @@ class GenerateDoc(Command):
                     str_align=str_align,
                     standard_type=standard_type,
                     # get_example=get_example,
-                    project_name=project_name,
+                    project_name=self.api.project_name,
                     # is_mtom=is_mtom,
                     # mtom_fields=mtom_fields,
                     # method_field_example=method_field_example,

@@ -235,22 +235,6 @@ class ApiModel(Model):
             setattr(r, key, value)
         r.save()
         return r
-    
-    # @classmethod
-    # def init_storage(cls):
-    #     storage = Storage(
-    #         kind=cls._meta.store_kind,
-    #         bucket=cls._meta.bucket,
-    #         minio_url=cls._meta.minio_url, 
-    #         minio_secure=cls._meta.minio_secure,
-    #         minio_access_key=cls._meta.minio_access_key, 
-    #         minio_secret_key=cls._meta.minio_secret_key,
-    #         qiniu_url = cls._meta.qiniu_url,
-    #         qiniu_access_key = cls._meta.qiniu_access_key,
-    #         qiniu_secret_key = cls._meta.qiniu_secret_key,
-    #         qiniu_bucket_url = cls._meta.qiniu_bucket_url,
-    #     )
-    #     setattr(cls, "storage", storage)
 
     @classmethod
     def validate(cls, **params):
@@ -300,10 +284,13 @@ class ApiModel(Model):
         #     r[field_name] = [model_to_dict(x) for x in getattr(obj, field_name)]
         # 过滤掉不需要的字段
         result = {}
-        for k, v in r.items():
-            if without_fields and k in without_fields:
+        for name, value in r.items():
+            field = cls.get_field_by_name(name)
+            if field._hidden:
                 continue
-            result[k] = field_to_json(v, datetime_format)
+            if without_fields and name in without_fields:
+                continue
+            result[name] = field_to_json(value, datetime_format)
         return result
     
     class Meta:
@@ -345,11 +332,10 @@ class ApiFileIDField(CharField):
         self.source_type = kwargs.pop("source_type", "file")
         super(ApiFileIDField, self).__init__(max_length=max_length, *args, **kwargs)
 
-    # def db_value(self, value):
-    #     # 写数据库时会使用该函数返回的值，但是并不会修改参数的值
-    #     print("--- db value ---")
-    #     r = self.model._meta.storage.write(value)
-    #     return r
+    def db_value(self, file_obj):
+        # 写数据库时会使用该函数返回的值，但是并不会修改参数的值
+        r = self.model._meta.storage.write(file_obj)
+        return r
     
     def python_value(self, value):
         # just for select sql
