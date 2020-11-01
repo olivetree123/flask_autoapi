@@ -1,5 +1,7 @@
 # 获取所有的 docstring，生成 doc
 import os
+from flask import request
+from functools import wraps
 from copy import copy, deepcopy
 from flask_restful import Api
 
@@ -15,6 +17,7 @@ class AutoAPI(object):
         # doc_folder 位于 static 目录下
         self.doc_folder = "docs"
         self._lazy_resources = []
+        self._custom_resources = {}
     
     def init_app(self, app, model_list, decorator_list=None, project_name=""):
         if not isinstance(model_list, (list, tuple)):
@@ -36,6 +39,7 @@ class AutoAPI(object):
             self.update_resource(data[0], *data[1:])
     
     def update_resource(self, resource, *urls):
+        self._custom_resources[resource.__name__] = urls[0]
         if self.app:
             endpoint = resource.__name__.lower()
             func = self.api.output(resource.as_view(endpoint))
@@ -64,7 +68,6 @@ class AutoAPI(object):
     def _auto_urls(self):
         endpoints = []
         for model in self.model_list:
-            print("model = ", model)
             # model._meta.api_methods = [method.upper() for method in model._meta.api_methods]
             class_name = model.__name__ + "Endpoint"
             endpoint = type(class_name, (BaseEndpoint, ), {})
@@ -98,4 +101,23 @@ class AutoAPI(object):
                 url2 = url1 + "<id>/"
                 self.api.add_resource(endpoint, url1, url2, endpoint=endpoint.__name__.lower(), strict_slashes=False)
 
-        
+
+def param_extrator(param_class):
+    if not issubclass(param_class, Param):
+        raise TypeError("param_class should be subclass of Param")
+
+    def wrapper(func):
+        @wraps(func)
+        def wrapper2(*args, **kwargs):
+            if request.content_type == "application/json":
+                params = request.get_json()
+            elif request.content_type == "application/json":
+                params = request.get_data()
+            param = param_class(**params)
+            args = list(args)
+            args.insert(1, param)
+            return func(*args, **kwargs)
+
+        return wrapper2
+
+    return wrapper

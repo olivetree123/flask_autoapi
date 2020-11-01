@@ -22,7 +22,7 @@ def read(fname):
 
 NAME = "flask_autoapi"
 
-PACKAGES = ["flask_autoapi", "flask_autoapi.storage", "flask_autoapi.utils"]
+PACKAGES = ["flask_autoapi", "flask_autoapi.storage", "flask_autoapi.utils", "flask_autoapi.form"]
 
 DESCRIPTION = "根据模型自动生成 API 接口和文档"
 
@@ -36,7 +36,7 @@ AUTHOR_EMAIL = "olivetree123@163.com"
 
 URL = "https://github.com/olivetree123/flask_autoapi"
 
-VERSION = "0.9.1"
+VERSION = "0.10.0"
 
 LICENSE = "MIT"
 

@@ -1,6 +1,7 @@
 import os
 import json
 import peewee
+import inspect
 from jinja2 import Template
 from flask_script import Command
 
@@ -8,10 +9,26 @@ from flask_autoapi.utils.filter import standard_type, str_align, get_example, is
 from flask_autoapi.utils.cmd import sys_apidoc
 from flask_autoapi.endpoint import BaseEndpoint, BaseListEndpoint
 
+
+# doc_tmpl = """
+#         @api {{Method}} {{Url}} {{Title}}
+#         @apiGroup {{Group}}
+
+#         @apiExample 参数
+#         {%- for field in Fields %}
+#         {{ str_align(standard_type(field.field_type))}} \t {{ str_align(field.name, 15) }}  # {% if field.null is sameas true %} 非必填项 {% else %} 必填项 {% endif %} {% if field.verbose_name %}, {{field.verbose_name}} {% endif %}{% endfor %}
+        
+
+#         @apiExample 返回值
+# {{DATA}}
+# """
+
+
 class GenerateDoc(Command):
-    def __init__(self, doc_model_list, diy_endpoint_list=None, static_folder="static"):
+    def __init__(self, api, diy_endpoint_list=None, static_folder="static"):
+        self.api = api
         self.static_folder = static_folder
-        self.doc_model_list = doc_model_list
+        self.doc_model_list = api.model_list
         self.diy_endpoint_list = diy_endpoint_list if diy_endpoint_list else []
         self.docs_folder = os.path.join(self.static_folder, "docs")
 
@@ -43,11 +60,38 @@ class GenerateDoc(Command):
         ]
 
         f = open(os.path.join(self.static_folder, "doc.py"), "w+")
+        # template = Template(doc_tmpl)
+        # for endpoint in self.diy_endpoint_list:
+        #     titles = getattr(endpoint, "api_title")
+        #     if not titles:
+        #         continue
+        #     for method in ["get", "post", "put", "delete"]:
+        #         if not hasattr(endpoint, method):
+        #             continue
+        #         handler = getattr(endpoint, method)
+        #         param_class = inspect.getclosurevars(handler).nonlocals.get(
+        #             "param_class")
+        #         if not param_class:
+        #             continue
+        #         content = template.render(
+        #             Url=self.api._custom_resources.get(endpoint.__name__),
+        #             Method="{"+method.upper()+"}",
+        #             Title=titles.get(method),
+        #             Group=getattr(endpoint, "api_group", "Default"),
+        #             Fields=param_class.fields.values(),
+        #             str_align=str_align,
+        #             standard_type=standard_type,
+        #         )
+        #         f.write('"""' + content + '\n"""\n')
+        
         for endpoint in self.diy_endpoint_list:
             for method in ["get", "post", "put", "delete"]:
-                if hasattr(endpoint, method):
-                    content = getattr(getattr(endpoint, method), "__doc__")
-                    f.write('"""'+content+'\n"""\n')
+                if not hasattr(endpoint, method):
+                    continue
+                content = getattr(getattr(endpoint, method), "__doc__")
+                if not content:
+                    continue
+                f.write('"""'+content+'\n"""\n')
         
         for model in self.doc_model_list:
             mtm = list(model._meta.manytomany.values())
