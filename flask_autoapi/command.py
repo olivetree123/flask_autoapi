@@ -112,7 +112,7 @@ class GenerateDoc(Command):
                     continue
                 template = Template(doc.get("content"))
                 content = template.render(
-                    Fields=fields,
+                    Fields= model.get_post_fields() if doc["method"] == "post" else fields,
                     # AllFields=all_fields,
                     ModelName=model.__name__, 
                     Title=model._meta.verbose_name, 

@@ -95,6 +95,12 @@ class ApiModel(Model):
         fields = cls.get_fields()
         fields = [field for field in fields if not field._hidden]
         return fields
+    
+    @classmethod
+    def get_post_fields(cls):
+        fields = cls.get_fields()
+        fields = [field for field in fields if not field._hidden and field.field_type != "AUTO"]
+        return fields
 
     @classmethod
     def get_field_by_name(cls, field_name):
