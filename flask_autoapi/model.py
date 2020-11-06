@@ -3,7 +3,9 @@ import types
 import werkzeug
 from io import BytesIO
 from playhouse.shortcuts import model_to_dict
-from peewee import Model, CharField, ManyToManyField, ForeignKeyField, Field, FieldAccessor, MetaField, Metadata
+from peewee import (Model, CharField, ManyToManyField, ForeignKeyField, Field,
+                    FieldAccessor, MetaField, Metadata, AutoField,
+                    DateTimeField)
 
 from flask_autoapi.storage import Storage
 from flask_autoapi.utils.diyutils import field_to_json, content_md5
@@ -20,9 +22,10 @@ def api_model_to_dict(obj, **kwargs):
 class MethodClass(object):
     def get(self, obj):
         raise NotImplementedError("get function should be implemented.")
-    
+
     def get_example(self):
-        raise NotImplementedError("get_example function should be implemented.")
+        raise NotImplementedError(
+            "get_example function should be implemented.")
 
 
 class ApiMethodField(MetaField):
@@ -32,51 +35,52 @@ class ApiMethodField(MetaField):
     field_type = "METHOD"
 
     def __init__(self, method_class, verbose_name=None):
-        self.choices      = None
-        self.read_only    = True
+        self.choices = None
+        self.read_only = True
         self.method_class = method_class
         self.verbose_name = verbose_name
         if not self.method_class:
             raise Exception("method_class should not be None.")
         if not issubclass(self.method_class, MethodClass):
-            raise Exception("method_class should not be subclass of MethodClass.")
+            raise Exception(
+                "method_class should not be subclass of MethodClass.")
 
 
 class ApiMetadata(Metadata):
-
     def __init__(self, model, **kwargs):
         self.method_fields = {}
         super(ApiMetadata, self).__init__(model, **kwargs)
-    
+
     def add_field(self, field_name, field, set_attribute=True):
         super(ApiMetadata, self).add_field(field_name, field, set_attribute)
         if isinstance(field, ApiMethodField) and field.name:
             self.add_method_field(field)
-        
+
     def add_method_field(self, field):
         self.method_fields[field.name] = field
 
 
 class ApiModel(Model):
-
     @classmethod
     def set_meta(cls, **kwargs):
         for key, value in kwargs.items():
             setattr(cls._meta, key, value)
-    
+
     @classmethod
     def get_with_pk(cls, pk_value, without_field_names=None):
-        if without_field_names and not isinstance(without_field_names, (list, tuple)):
+        if without_field_names and not isinstance(without_field_names,
+                                                  (list, tuple)):
             return None
         fields = cls.get_fields()
         fields = [field for field in fields if field.name not in without_field_names] \
                     if without_field_names else fields
-        return cls.select(*fields).where(cls._meta.primary_key == pk_value).first()
-    
+        return cls.select(*fields).where(
+            cls._meta.primary_key == pk_value).first()
+
     @classmethod
     def get_field_names(cls):
         return cls._meta.sorted_field_names
-    
+
     @classmethod
     def get_all_field_names(cls):
         all_fields = cls.get_fields() + list(cls._meta.manytomany.values())
@@ -89,17 +93,20 @@ class ApiModel(Model):
             field = cls._meta.fields[field_name]
             fields.append(field)
         return fields
-    
+
     @classmethod
     def get_display_fields(cls):
         fields = cls.get_fields()
         fields = [field for field in fields if not field._hidden]
         return fields
-    
+
     @classmethod
     def get_post_fields(cls):
         fields = cls.get_fields()
-        fields = [field for field in fields if not field._hidden and field.field_type != "AUTO"]
+        fields = [
+            field for field in fields
+            if not field._hidden and field.field_type != "AUTO"
+        ]
         return fields
 
     @classmethod
@@ -117,33 +124,38 @@ class ApiModel(Model):
                 continue
             handler = getattr(cls, field.in_handler)
             if not (handler and isinstance(handler, types.MethodType)):
-                raise Exception("in_handler should be function, but {} found.".format(type(handler)))
+                raise Exception(
+                    "in_handler should be function, but {} found.".format(
+                        type(handler)))
             params[field.name] = handler(params.get(field.name), **params)
             if field.name in cls._meta.manytomany:
-                params[field.name+"_value"] = params.pop(field.name)
+                params[field.name + "_value"] = params.pop(field.name)
         return params
-    
+
     def mtom(self, **params):
         for field_name, field in self._meta.manytomany.items():
             ins = getattr(self, field_name)
             ins.clear()
-            value = params[field_name+"_value"]
+            value = params[field_name + "_value"]
             if isinstance(value, (list, tuple)):
                 for v in value:
                     ins.add(v)
             else:
                 ins.add(value)
-    
+
     @classmethod
     def out_handlers(cls, **data):
         # 对 to_json() 之后的结果进行处理
         fields = cls.get_fields() + list(cls._meta.manytomany.values())
         for field in fields:
-            if not (hasattr(field, "out_handler") and getattr(field, "out_handler")):
+            if not (hasattr(field, "out_handler")
+                    and getattr(field, "out_handler")):
                 continue
             handler = getattr(cls, field.out_handler)
             if not (handler and isinstance(handler, types.MethodType)):
-                raise Exception("out_handler should be MethodType, but {} found.".format(type(handler)))
+                raise Exception(
+                    "out_handler should be MethodType, but {} found.".format(
+                        type(handler)))
             data[field.name] = handler(data.get(field.name))
         return data
 
@@ -163,7 +175,8 @@ class ApiModel(Model):
                     if not content:
                         continue
                     if not isinstance(content, (str, bytes)):
-                        raise Exception("{} 应该为 str 或 bytes，而不是 {}".format(field.name, type(content)))
+                        raise Exception("{} 应该为 str 或 bytes，而不是 {}".format(
+                            field.name, type(content)))
                     if isinstance(content, str):
                         content = content.encode("utf8")
                     f = BytesIO(content)
@@ -172,13 +185,18 @@ class ApiModel(Model):
                     params[field.name] = f
                 elif field.source_type == "file":
                     f = params.get(field.source_name)
-                    if not isinstance(f, (werkzeug.datastructures.FileStorage, type(None))):
-                        raise Exception("类型错误，{} 应该为 werkzeug.datastructures.FileStorage 类型，而不是 {}".format(field.source_name, type(f)))
+                    if not isinstance(
+                            f,
+                        (werkzeug.datastructures.FileStorage, type(None))):
+                        raise Exception(
+                            "类型错误，{} 应该为 werkzeug.datastructures.FileStorage 类型，而不是 {}"
+                            .format(field.source_name, type(f)))
                     params[field.name] = f
                 else:
-                    raise Exception("不能识别的类型, 无法转换，source_type = {}".format(field.source_type))
+                    raise Exception("不能识别的类型, 无法转换，source_type = {}".format(
+                        field.source_type))
         return params
-    
+
     def get_method_fields(self):
         fields = list(self._meta.method_fields.values())
         for field in fields:
@@ -197,7 +215,7 @@ class ApiModel(Model):
                 print("{} is None".format(field.name))
                 return False
         return True
-    
+
     @classmethod
     def upload_files(cls, **params):
         # cls.init_storage()
@@ -209,7 +227,7 @@ class ApiModel(Model):
                 file_id = cls._meta.storage.write(params[field.name])
                 params[field.name] = file_id
         return params
-    
+
     @classmethod
     def verify_list_args(cls, **args):
         # 验证 list 接口的参数
@@ -219,15 +237,16 @@ class ApiModel(Model):
                 continue
             result[key] = value
         return result
-    
+
     @classmethod
     def get_fileid_field_name(cls, **params):
         fields = cls.get_fields()
         for field in fields:
-            if isinstance(field, ApiFileIDField) and not params.get(field.name):
+            if isinstance(field,
+                          ApiFileIDField) and not params.get(field.name):
                 return field.name
         return None
-    
+
     @classmethod
     def update_by_pk(cls, pk_value, **params):
         status = cls.verify_params(**params)
@@ -236,7 +255,8 @@ class ApiModel(Model):
         field_names = cls.get_field_names()
         r = cls.get_with_pk(pk_value)
         for key, value in params.items():
-            if not key in field_names or cls.get_field_by_name(key).primary_key:
+            if not key in field_names or cls.get_field_by_name(
+                    key).primary_key:
                 continue
             setattr(r, key, value)
         r.save()
@@ -250,7 +270,7 @@ class ApiModel(Model):
         返回 False 表示错误，会返回 BadRequest
         """
         return True
-    
+
     @classmethod
     def diy_before_save(cls, **params):
         """
@@ -259,7 +279,7 @@ class ApiModel(Model):
         修改参数应该使用各个Field 的 in_handler。
         """
         return True
-    
+
     @classmethod
     def diy_after_save(cls, obj):
         """
@@ -267,7 +287,7 @@ class ApiModel(Model):
         create/save/update 之后，自定义操作。
         """
         return True
-    
+
     @classmethod
     def diy_after_get(cls, **json_data):
         """
@@ -276,7 +296,10 @@ class ApiModel(Model):
         return json_data
 
     @classmethod
-    def to_json(cls, obj, without_fields=None, datetime_format="%Y-%m-%d %H:%M:%S"):
+    def to_json(cls,
+                obj,
+                without_fields=None,
+                datetime_format="%Y-%m-%d %H:%M:%S"):
         fields = cls.get_fields()
         # for field in fields:
         #     # 如果数据源为 string，则返回时也应该返回 string
@@ -298,7 +321,7 @@ class ApiModel(Model):
                 continue
             result[name] = field_to_json(value, datetime_format)
         return result
-    
+
     class Meta:
         model_metadata_class = ApiMetadata
         group = ""
@@ -336,41 +359,45 @@ class ApiFileIDField(CharField):
     def __init__(self, max_length=255, *args, **kwargs):
         self.source_name = kwargs.pop("source_name", "file")
         self.source_type = kwargs.pop("source_type", "file")
-        super(ApiFileIDField, self).__init__(max_length=max_length, *args, **kwargs)
+        super(ApiFileIDField, self).__init__(max_length=max_length,
+                                             *args,
+                                             **kwargs)
 
     def db_value(self, file_obj):
         # 写数据库时会使用该函数返回的值，但是并不会修改参数的值
         r = self.model._meta.storage.write(file_obj)
         return r
-    
+
     def python_value(self, value):
         # just for select sql
         content = self.model._meta.storage.read(value)
         return content
 
-class ApiCharField(CharField):
 
-    def __init__(self, max_length=255, *args, **kwargs):
-        self.in_handler  = kwargs.pop("in_handler", None)
+class ApiCharField(CharField):
+    def __init__(self, max_length=255, read_only=False, *args, **kwargs):
+        self.read_only = read_only
+        self.in_handler = kwargs.pop("in_handler", None)
         self.out_handler = kwargs.pop("out_handler", None)
         # if self.in_handler and not isinstance(self.in_handler, types.FunctionType):
         #     raise Exception("in_handler should be function, but {} found.".format(type(self.in_handler)))
         # if self.out_handler and not isinstance(self.out_handler, types.FunctionType):
         #     raise Exception("out_handler should be function, but {} found.".format(type(self.out_handler)))
-        super(ApiCharField, self).__init__(max_length=max_length, *args, **kwargs)
+        super(ApiCharField, self).__init__(max_length=max_length,
+                                           *args,
+                                           **kwargs)
 
 
 class ApiManyToManyField(ManyToManyField):
-
     def __init__(self, model, **kwargs):
-        self.in_handler  = kwargs.pop("in_handler", None)
+        self.in_handler = kwargs.pop("in_handler", None)
         self.out_handler = kwargs.pop("out_handler", None)
         # if self.in_handler and not isinstance(self.in_handler, types.FunctionType):
         #     raise Exception("in_handler should be function, but {} found.".format(type(self.in_handler)))
         # if self.out_handler and not isinstance(self.out_handler, types.FunctionType):
         #     raise Exception("out_handler should be function, but {} found.".format(type(self.out_handler)))
         super(ApiManyToManyField, self).__init__(model, **kwargs)
-    
+
     def get_through_model(self):
         if not self.through_model:
             lhs, rhs = self.get_models()
@@ -380,20 +407,22 @@ class ApiManyToManyField(ManyToManyField):
                 database = self.model._meta.database
                 schema = self.model._meta.schema
                 table_name = '%s_%s_through' % tuple(tables)
-                indexes = (
-                    ((lhs._meta.name, rhs._meta.name),
-                     True),)
+                indexes = (((lhs._meta.name, rhs._meta.name), True), )
 
             attrs = {
-                lhs._meta.name: ForeignKeyField(lhs, on_delete=self._on_delete,
-                                                on_update=self._on_update),
-                rhs._meta.name: ForeignKeyField(rhs, on_delete=self._on_delete,
-                                                on_update=self._on_update)}
+                lhs._meta.name:
+                ForeignKeyField(lhs,
+                                on_delete=self._on_delete,
+                                on_update=self._on_update),
+                rhs._meta.name:
+                ForeignKeyField(rhs,
+                                on_delete=self._on_delete,
+                                on_update=self._on_update)
+            }
             attrs['Meta'] = Meta
 
             self.through_model = type(
-                '%s%sThrough' % (lhs.__name__, rhs.__name__),
-                (ApiModel,),
+                '%s%sThrough' % (lhs.__name__, rhs.__name__), (ApiModel, ),
                 attrs)
 
         return self.through_model
@@ -402,8 +431,9 @@ class ApiManyToManyField(ManyToManyField):
 class ApiUUIDField(Field):
     field_type = "char(32)"
 
-    def __init__(self, **kwargs):
-        self.in_handler  = kwargs.pop("in_handler", None)
+    def __init__(self, read_only=False, **kwargs):
+        self.read_only = read_only
+        self.in_handler = kwargs.pop("in_handler", None)
         self.out_handler = kwargs.pop("out_handler", None)
         # self.obj_func = kwargs.pop("obj_func", None)
         super(ApiUUIDField, self).__init__(**kwargs)
@@ -417,7 +447,8 @@ class ApiUUIDField(Field):
                 value = uuid.UUID(value)  # convert hex string to UUID
             except Exception as e:
                 print("Failed to convert value {} to uuid".format(value))
-        value = value.hex if isinstance(value, uuid.UUID) else str(value)  # convert UUID to hex string.
+        value = value.hex if isinstance(value, uuid.UUID) else str(
+            value)  # convert UUID to hex string.
         return value
 
     def python_value(self, value):
@@ -427,3 +458,14 @@ class ApiUUIDField(Field):
             print("Failed to convert value {} to uuid".format(value))
         return value
 
+
+class ApiAutoField(AutoField):
+    def __init__(self, read_only=False, *args, **kwargs):
+        self.read_only = read_only
+        super(ApiAutoField, self).__init__(*args, **kwargs)
+
+
+class ApiDateTimeField(DateTimeField):
+    def __init__(self, read_only=False, *args, **kwargs):
+        self.read_only = read_only
+        super(ApiDateTimeField, self).__init__(*args, **kwargs)
