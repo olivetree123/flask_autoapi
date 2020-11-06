@@ -104,8 +104,7 @@ class ApiModel(Model):
     def get_post_fields(cls):
         fields = cls.get_fields()
         fields = [
-            field for field in fields
-            if not field._hidden and field.field_type != "AUTO"
+            field for field in fields if getattr(field, "read_only", False)
         ]
         return fields
 
