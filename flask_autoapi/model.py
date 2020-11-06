@@ -104,7 +104,7 @@ class ApiModel(Model):
     def get_post_fields(cls):
         fields = cls.get_fields()
         fields = [
-            field for field in fields if getattr(field, "read_only", False)
+            field for field in fields if not getattr(field, "read_only", False)
         ]
         return fields
 
