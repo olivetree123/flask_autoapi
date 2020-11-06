@@ -5,10 +5,12 @@ from io import BytesIO
 from playhouse.shortcuts import model_to_dict
 from peewee import (Model, CharField, ManyToManyField, ForeignKeyField, Field,
                     FieldAccessor, MetaField, Metadata, AutoField,
-                    DateTimeField)
+                    DateTimeField, IntegerField, MySQLDatabase)
 
 from flask_autoapi.storage import Storage
 from flask_autoapi.utils.diyutils import field_to_json, content_md5
+
+MySQLDatabase.field_types["OBJECT"] = "VARCHAR(40)"
 
 
 def api_model_to_dict(obj, **kwargs):
@@ -126,7 +128,7 @@ class ApiModel(Model):
                 raise Exception(
                     "in_handler should be function, but {} found.".format(
                         type(handler)))
-            params[field.name] = handler(params.get(field.name), **params)
+            params[field.name] = handler(params.get(field.name))
             if field.name in cls._meta.manytomany:
                 params[field.name + "_value"] = params.pop(field.name)
         return params
@@ -275,7 +277,7 @@ class ApiModel(Model):
         """
         用于 POST/PUT 方法。
         做一些自定义操作，但是不能修改参数。
-        修改参数应该使用各个Field 的 in_handler。
+        修改参数应该使用各个Field 的 in_handler。                        
         """
         return True
 
@@ -353,7 +355,7 @@ class ApiModel(Model):
 
 
 class ApiFileIDField(CharField):
-    # field_type = "FILE_ID"
+    field_type = "OBJECT"
 
     def __init__(self, max_length=255, *args, **kwargs):
         self.source_name = kwargs.pop("source_name", "file")
@@ -468,3 +470,9 @@ class ApiDateTimeField(DateTimeField):
     def __init__(self, read_only=False, *args, **kwargs):
         self.read_only = read_only
         super(ApiDateTimeField, self).__init__(*args, **kwargs)
+
+
+class ApiIntegerField(IntegerField):
+    def __init__(self, read_only=False, *args, **kwargs):
+        self.read_only = read_only
+        super(ApiIntegerField, self).__init__(*args, **kwargs)
