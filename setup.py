@@ -39,7 +39,7 @@ AUTHOR_EMAIL = "olivetree123@163.com"
 
 URL = "https://github.com/olivetree123/flask_autoapi"
 
-VERSION = "0.10.6"
+VERSION = "0.10.7"
 
 LICENSE = "MIT"
 
