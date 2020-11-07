@@ -8,9 +8,7 @@ class Client(object):
         self.kind = None
         self.handler_class = None
 
-    def __getattribute__(self, name):
-        if hasattr(self, name):
-            return getattr(self, name)
+    def __getattr__(self, name):
         return getattr(self.conn, name)
 
 

@@ -5,6 +5,7 @@ from flask_restful import Resource, marshal_with
 from flask_autoapi.utils.response import JsonResponse, resource_fields
 from flask_autoapi.utils.message import BAD_REQUEST, OBJECT_SAVE_FAILED
 
+
 class BaseEndpoint(Resource):
 
     Model = None
@@ -12,11 +13,11 @@ class BaseEndpoint(Resource):
     # 由于 method_decorators 是内层装饰器，比 decorators 先起作用，所以一律使用 method_decorators
     decorators = []
     method_decorators = {
-        "get":      [marshal_with(resource_fields)], 
-        "put":      [marshal_with(resource_fields)],
-        "post":     [marshal_with(resource_fields)],
-        "delete":   [marshal_with(resource_fields)],
-        "options":  [marshal_with(resource_fields)],
+        "get": [marshal_with(resource_fields)],
+        "put": [marshal_with(resource_fields)],
+        "post": [marshal_with(resource_fields)],
+        "delete": [marshal_with(resource_fields)],
+        "options": [marshal_with(resource_fields)],
     }
 
     @classmethod
@@ -24,21 +25,25 @@ class BaseEndpoint(Resource):
         if not decorator_list:
             return
         if not isinstance(decorator_list, (list, tuple)):
-            raise Exception("TypeError, decorator_list should be list or tuple, but {} found".format(type(decorator_list)))
+            raise Exception(
+                "TypeError, decorator_list should be list or tuple, but {} found"
+                .format(type(decorator_list)))
         cls.decorators += decorator_list
-    
+
     @classmethod
     def add_method_decorators(cls, method_decorators):
         if not method_decorators:
             return
         if not isinstance(method_decorators, dict):
-            raise Exception("TypeError, method_decorators should be dict, but {} found, endpoint = {}".format(type(method_decorators), cls))
+            raise Exception(
+                "TypeError, method_decorators should be dict, but {} found, endpoint = {}"
+                .format(type(method_decorators), cls))
         for key, value in method_decorators.items():
             cls.method_decorators[key] += value
 
-    def get(self, id):
+    def get(self, key):
         """
-        @api {GET} /{{project_name}}/{{ModelName.lower()}}/:id 获取{{Title}}详情
+        @api {GET} /{{project_name}}/{{ModelName.lower()}}/{key} 获取{{Title}}详情
         @apiName Get{{ModelName}}
         @apiGroup {{Group}}
 
@@ -48,15 +53,15 @@ class BaseEndpoint(Resource):
         """
         without_fields = request.args.get("without_fields")
         without_fields = without_fields.split(",") if without_fields else None
-        r = self.Model.get_with_pk(id, without_fields)
+        r = self.Model.get_with_pk(key, without_fields)
         if not r:
             return JsonResponse()
         r.get_method_fields()
-        r = self.Model.to_json(r, without_fields) if r else None
+        r = self.Model.json(r, without_fields) if r else None
         r = self.Model.out_handlers(**r)
         r = self.Model.diy_after_get(**r)
         return JsonResponse(data=r)
-    
+
     def post(self):
         """
         @api {POST} /{{project_name}}/{{ModelName.lower()}} 创建{{Title}}
@@ -72,29 +77,31 @@ class BaseEndpoint(Resource):
 {{ DATA}}
 
         """
-        params = request.get_json() if request.content_type == "application/json" else request.form.to_dict()
+        params = request.get_json(
+        ) if request.content_type == "application/json" else request.form.to_dict(
+        )
         params.update(request.files.to_dict())
         params = self.Model.in_handlers(**params)
         params = self.Model.format_params(**params)
         status = self.Model.verify_params(**params)
         if not status:
             return JsonResponse(BAD_REQUEST)
-        params = self.Model.upload_files(**params)
+        # params = self.Model.upload_files(**params)
         if not self.Model.validate(**params):
             return JsonResponse(BAD_REQUEST)
         self.Model.diy_before_save(**params)
         r = self.Model.create(**params)
+        # r = self.Model.get_by_id(r.get_id())
         self.Model.diy_after_save(r)
-        r.mtom(**params)
-        r.get_method_fields()
-        r = self.Model.to_json(r) if r else None
+        # r.get_method_fields()
+        r = self.Model.json(r) if r else None
         r = self.Model.out_handlers(**r)
         r = self.Model.diy_after_get(**r)
         return JsonResponse(data=r)
-    
-    def put(self, id):
+
+    def put(self, key):
         """
-        @api {PUT} /{{project_name}}/{{ModelName.lower()}}/:id 更新{{Title}}
+        @api {PUT} /{{project_name}}/{{ModelName.lower()}}/{key} 更新{{Title}}
         @apiName Update{{ModelName}}
         @apiGroup {{Group}}
 
@@ -106,7 +113,9 @@ class BaseEndpoint(Resource):
 {{ DATA}}
         
         """
-        params = request.get_json() if request.content_type == "application/json" else request.form.to_dict()
+        params = request.get_json(
+        ) if request.content_type == "application/json" else request.form.to_dict(
+        )
         params.update(request.files.to_dict())
         params = self.Model.in_handlers(**params)
         params = self.Model.format_params(**params)
@@ -117,18 +126,18 @@ class BaseEndpoint(Resource):
         if not self.Model.validate(**params):
             return JsonResponse(BAD_REQUEST)
         self.Model.diy_before_save(**params)
-        r = self.Model.update_by_pk(id, **params)
+        r = self.Model.update_by_pk(key, **params)
         self.Model.diy_after_save(r)
         r.mtom(**params)
         r.get_method_fields()
-        r = self.Model.to_json(r) if r else None
+        r = self.Model.json(r) if r else None
         r = self.Model.out_handlers(**r)
         r = self.Model.diy_after_get(**r)
         return JsonResponse(data=r)
-    
-    def delete(self, id):
+
+    def delete(self, key):
         """
-        @api {DELETE} /{{project_name}}/{{ModelName.lower()}}/:id 删除{{Title}}
+        @api {DELETE} /{{project_name}}/{{ModelName.lower()}}/{key} 删除{{Title}}
         @apiName Delete{{ModelName}}
         @apiGroup {{Group}}
 
@@ -140,7 +149,8 @@ class BaseEndpoint(Resource):
         }
         
         """
-        self.Model.delete().where(self.Model._meta.primary_key == id).execute()
+        pk = self.Model._meta.primary_key if not self.Model._meta.display_id else self.Model._meta.display_id
+        self.Model.delete().where(pk == key).execute()
         return JsonResponse()
 
 
@@ -150,11 +160,11 @@ class BaseListEndpoint(Resource):
     Type = "List"
     decorators = []
     method_decorators = {
-        "get":      [marshal_with(resource_fields)], 
-        "put":      [marshal_with(resource_fields)],
-        "post":     [marshal_with(resource_fields)],
-        "delete":   [marshal_with(resource_fields)],
-        "options":  [marshal_with(resource_fields)],
+        "get": [marshal_with(resource_fields)],
+        "put": [marshal_with(resource_fields)],
+        "post": [marshal_with(resource_fields)],
+        "delete": [marshal_with(resource_fields)],
+        "options": [marshal_with(resource_fields)],
     }
 
     @classmethod
@@ -164,13 +174,15 @@ class BaseListEndpoint(Resource):
         if not isinstance(decorator_list, (list, tuple)):
             raise Exception("格式错误")
         cls.decorators += decorator_list
-    
+
     @classmethod
     def add_method_decorators(cls, method_decorators):
         if not method_decorators:
             return
         if not isinstance(method_decorators, dict):
-            raise Exception("TypeError, method_decorators should be dict, but {} found".format(type(method_decorators)))
+            raise Exception(
+                "TypeError, method_decorators should be dict, but {} found".
+                format(type(method_decorators)))
         for key, value in method_decorators.items():
             cls.method_decorators[key] += value
 
@@ -190,8 +202,8 @@ class BaseListEndpoint(Resource):
         """
         args = request.args.to_dict()
         try:
-            page  = int(args.get("page", 1))
-            page_size   = int(args.get("page_size", 10))
+            page = int(args.get("page", 1))
+            page_size = int(args.get("page_size", 10))
             order = int(args.get("order", 0))
         except:
             return JsonResponse(BAD_REQUEST)
@@ -215,17 +227,23 @@ class BaseListEndpoint(Resource):
                     result = result.where(getattr(self.Model, key) <= b)
             else:
                 result = result.where(getattr(self.Model, key) == value)
-        result = result.order_by(self.Model.create_time.desc()) if order == 0 else result.order_by(self.Model.create_time.asc())
+        result = result.order_by(
+            self.Model.created.desc()) if order == 0 else result.order_by(
+                self.Model.created.asc())
         total_count = result.count()
-        result = result.offset((page-1)*page_size).limit(page_size)
-        result = [self.Model.to_json(r.get_method_fields(), without_fields) for r in result] if result else None
-        result = [self.Model.out_handlers(**r) for r in result] if result else None
-        result = [self.Model.diy_after_get(**r) for r in result] if result else None
+        result = result.offset((page - 1) * page_size).limit(page_size)
+        result = [
+            self.Model.json(r.get_method_fields(), without_fields)
+            for r in result
+        ] if result else None
+        result = [self.Model.out_handlers(**r)
+                  for r in result] if result else None
+        result = [self.Model.diy_after_get(**r)
+                  for r in result] if result else None
         result = {
-            "page_size":page_size,
+            "page_size": page_size,
             "total": total_count,
             "page": page,
-            "result":result
+            "result": result
         }
         return JsonResponse(data=result)
-        

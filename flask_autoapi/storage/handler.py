@@ -13,14 +13,14 @@ class StorageHandler(object):
 class FileHandler(StorageHandler):
     def write(self, file_obj):
         content = str(file_obj.read(), encoding="latin-1")
-        md5_hash = content_md5(content.encode("latin-1"))
-        file_path = os.path.join(self.bucket, md5_hash)
+        hash_value = content_md5(content.encode("latin-1"))
+        file_path = os.path.join(self.bucket, hash_value)
         with open(file_path, "wb") as f:
             f.write(bytes(content, encoding="latin-1"))
-        return md5_hash
+        return hash_value
 
-    def read(self, md5_hash):
-        file_path = os.path.join(self.bucket, md5_hash)
+    def read(self, hash_value):
+        file_path = os.path.join(self.bucket, hash_value)
         with open(file_path, "rb") as f:
             content = f.read()
         return content
@@ -32,41 +32,40 @@ class MinioHandler(StorageHandler):
         try:
             etag = self.client.put_object(
                 bucket_name=self.bucket,
-                object_name=file_obj.md5_hash,
-                data=file_obj,
+                object_name=file_obj.hash_value,
+                data=file_obj.obj,
                 length=file_obj.length,
             )
         except Exception as e:
             print("上传文件到 minio 失败，{}".format(e))
         return etag
 
-    def read(self, md5_hash):
+    def read(self, hash_value):
         r = self.client.get_object(
             bucket_name=self.bucket,
-            object_name=md5_hash,
+            object_name=hash_value,
         )
         return r.read()
 
 
 class QiniuHandler(StorageHandler):
     def write(self, file_obj):
-        content = file_obj.read()
         token = self.client.upload_token(
             bucket=self.bucket,
-            key=file_obj.md5_hash,
+            key=file_obj.hash_value,
             expires=10,
         )
         r, info = self.client.put_data(
             token=token,
-            key=file_obj.md5_hash,
-            data=content,
+            key=file_obj.hash_value,
+            data=file_obj.read(),
         )
         return r["key"]
 
-    def read(self, md5_hash):
+    def read(self, hash_value):
         base_url = "http://{BUCKET_URL}/{KEY}".format(
             BUCKET_URL=self.bucket,
-            KEY=md5_hash,
+            KEY=hash_value,
         )
         private_url = self.client.private_download_url(
             base_url,
@@ -81,15 +80,16 @@ class QiniuHandler(StorageHandler):
 class TencentHandler(StorageHandler):
     """腾讯云对象存储"""
     def write(self, file_obj):
-        self.client.put_object(
+        r = self.client.put_object(
             Bucket=self.bucket,
-            Body=file_obj,
-            Key=file_obj.md5_hash,
+            Body=file_obj.obj,
+            Key=file_obj.hash_value,
         )
+        return r["ETag"].replace('"', "")
 
-    def read(self, md5_hash):
+    def read(self, hash_value):
         r = self.client.get_object(
             Bucket=self.bucket,
-            Key=md5_hash,
+            Key=hash_value,
         )
-        return r["Body"].get_stream_to_file(md5_hash)
+        return r["Body"].get_raw_stream().read()

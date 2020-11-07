@@ -9,6 +9,7 @@ DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 def datetime_to_str(_datetime, _format=DATETIME_FORMAT):
     return _datetime.strftime(_format)
 
+
 def field_to_json(value, datetime_format=DATETIME_FORMAT):
     ret = value
     if isinstance(value, datetime):
@@ -16,17 +17,23 @@ def field_to_json(value, datetime_format=DATETIME_FORMAT):
     elif isinstance(value, list):
         ret = [field_to_json(_) for _ in value] if value else None
     elif isinstance(value, dict):
-        ret = {k: field_to_json(v) for k, v in value.items()} if value else None
+        ret = {k: field_to_json(v)
+               for k, v in value.items()} if value else None
     elif isinstance(value, bytes):
         ret = value.decode("utf-8")
     elif isinstance(value, bool):
         ret = int(ret)
     elif isinstance(value, uuid.UUID):
-        ret = str(value)
+        ret = value.hex
     elif isinstance(value, Decimal):
         ret = float(ret)
-    return ret
+    return str(ret)
+
 
 def content_md5(content):
     hash_md5 = hashlib.md5(content)
     return hash_md5.hexdigest()
+
+
+def get_uuid() -> str:
+    return uuid.uuid4().hex

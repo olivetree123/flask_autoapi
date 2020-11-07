@@ -2,15 +2,16 @@ import uuid
 import types
 import werkzeug
 from io import BytesIO
+from datetime import datetime
 from playhouse.shortcuts import model_to_dict
 from peewee import (Model, CharField, ManyToManyField, ForeignKeyField, Field,
                     FieldAccessor, MetaField, Metadata, AutoField,
                     DateTimeField, IntegerField, MySQLDatabase)
 
-from flask_autoapi.storage import Storage
-from flask_autoapi.utils.diyutils import field_to_json, content_md5
+from flask_autoapi.storage import Storage, FileObject
+from flask_autoapi.utils.diyutils import field_to_json, content_md5, get_uuid
 
-MySQLDatabase.field_types["OBJECT"] = "VARCHAR(40)"
+MySQLDatabase.field_types["OBJECT"] = "VARCHAR"
 
 
 def api_model_to_dict(obj, **kwargs):
@@ -51,12 +52,17 @@ class ApiMethodField(MetaField):
 class ApiMetadata(Metadata):
     def __init__(self, model, **kwargs):
         self.method_fields = {}
+        self.display_id = None
         super(ApiMetadata, self).__init__(model, **kwargs)
 
     def add_field(self, field_name, field, set_attribute=True):
         super(ApiMetadata, self).add_field(field_name, field, set_attribute)
         if isinstance(field, ApiMethodField) and field.name:
             self.add_method_field(field)
+        if self.display_id and field.display_id:
+            raise AttributeError("duplicate display_id setting")
+        if hasattr(field, "display_id") and field.display_id:
+            self.display_id = field
 
     def add_method_field(self, field):
         self.method_fields[field.name] = field
@@ -76,8 +82,8 @@ class ApiModel(Model):
         fields = cls.get_fields()
         fields = [field for field in fields if field.name not in without_field_names] \
                     if without_field_names else fields
-        return cls.select(*fields).where(
-            cls._meta.primary_key == pk_value).first()
+        pk = cls._meta.primary_key if not cls._meta.display_id else cls._meta.display_id
+        return cls.select(*fields).where(pk == pk_value).first()
 
     @classmethod
     def get_field_names(cls):
@@ -123,11 +129,12 @@ class ApiModel(Model):
         for field in fields:
             if not (hasattr(field, "in_handler") and field.in_handler):
                 continue
-            handler = getattr(cls, field.in_handler)
-            if not (handler and isinstance(handler, types.MethodType)):
-                raise Exception(
-                    "in_handler should be function, but {} found.".format(
-                        type(handler)))
+            handler = field.in_handler
+            # handler = getattr(cls, field.in_handler)
+            # if not (handler and isinstance(handler, types.MethodType)):
+            #     raise Exception(
+            #         "in_handler should be function, but {} found.".format(
+            #             type(handler)))
             params[field.name] = handler(params.get(field.name))
             if field.name in cls._meta.manytomany:
                 params[field.name + "_value"] = params.pop(field.name)
@@ -146,17 +153,18 @@ class ApiModel(Model):
 
     @classmethod
     def out_handlers(cls, **data):
-        # 对 to_json() 之后的结果进行处理
+        # 对 json() 之后的结果进行处理
         fields = cls.get_fields() + list(cls._meta.manytomany.values())
         for field in fields:
             if not (hasattr(field, "out_handler")
                     and getattr(field, "out_handler")):
                 continue
-            handler = getattr(cls, field.out_handler)
-            if not (handler and isinstance(handler, types.MethodType)):
-                raise Exception(
-                    "out_handler should be MethodType, but {} found.".format(
-                        type(handler)))
+            # handler = getattr(cls, field.out_handler)
+            # if not (handler and isinstance(handler, types.MethodType)):
+            #     raise Exception(
+            #         "out_handler should be MethodType, but {} found.".format(
+            #             type(handler)))
+            handler = field.out_handler
             data[field.name] = handler(data.get(field.name))
         return data
 
@@ -170,9 +178,9 @@ class ApiModel(Model):
         # 格式化参数，主要是将 str 转换成 file 对象
         fields = cls.get_fields()
         for field in fields:
-            if isinstance(field, ApiFileIDField):
+            if isinstance(field, ApiFileField):
                 if field.source_type == "string":
-                    content = params.get(field.source_name)
+                    content = params.get(field.name)
                     if not content:
                         continue
                     if not isinstance(content, (str, bytes)):
@@ -181,18 +189,18 @@ class ApiModel(Model):
                     if isinstance(content, str):
                         content = content.encode("utf8")
                     f = BytesIO(content)
-                    setattr(f, "md5_hash", content_md5(content))
+                    setattr(f, "hash_value", content_md5(content))
                     setattr(f, "length", len(content))
-                    params[field.name] = f
+                    params[field.name] = FileObject(f)
                 elif field.source_type == "file":
-                    f = params.get(field.source_name)
+                    f = params.get(field.name)
                     if not isinstance(
                             f,
                         (werkzeug.datastructures.FileStorage, type(None))):
                         raise Exception(
                             "类型错误，{} 应该为 werkzeug.datastructures.FileStorage 类型，而不是 {}"
-                            .format(field.source_name, type(f)))
-                    params[field.name] = f
+                            .format(field.name, type(f)))
+                    params[field.name] = FileObject(f)
                 else:
                     raise Exception("不能识别的类型, 无法转换，source_type = {}".format(
                         field.source_type))
@@ -213,8 +221,7 @@ class ApiModel(Model):
             if field.auto_increment or field.default is not None or field.null:
                 continue
             if params.get(field.name) is None:
-                print("{} is None".format(field.name))
-                return False
+                raise ValueError("{} should not be None".format(field.name))
         return True
 
     @classmethod
@@ -224,7 +231,7 @@ class ApiModel(Model):
         for field in fields:
             if not params.get(field.name):
                 continue
-            if isinstance(field, ApiFileIDField):
+            if isinstance(field, ApiFileField):
                 file_id = cls._meta.storage.write(params[field.name])
                 params[field.name] = file_id
         return params
@@ -243,8 +250,7 @@ class ApiModel(Model):
     def get_fileid_field_name(cls, **params):
         fields = cls.get_fields()
         for field in fields:
-            if isinstance(field,
-                          ApiFileIDField) and not params.get(field.name):
+            if isinstance(field, ApiFileField) and not params.get(field.name):
                 return field.name
         return None
 
@@ -297,10 +303,10 @@ class ApiModel(Model):
         return json_data
 
     @classmethod
-    def to_json(cls,
-                obj,
-                without_fields=None,
-                datetime_format="%Y-%m-%d %H:%M:%S"):
+    def json(cls,
+             obj,
+             without_fields=None,
+             datetime_format="%Y-%m-%d %H:%M:%S"):
         fields = cls.get_fields()
         # for field in fields:
         #     # 如果数据源为 string，则返回时也应该返回 string
@@ -338,52 +344,43 @@ class ApiModel(Model):
         list_api_method_decorators = None
         # storage 是 Storage 的对象
         storage = None
-        # store_kind 指定文件存储的方式，支持 file/minio/qiniu
-        # store_kind = "file"
-        # bucket 指定文件存储文件夹，或云存储的 bucket
-        # bucket = ""
-        # minio 配置
-        # minio_url = ""
-        # minio_secure = False
-        # minio_access_key = ""
-        # minio_secret_key = ""
-        # qiniu 配置
-        # qiniu_url = ""
-        # qiniu_access_key = ""
-        # qiniu_secret_key = ""
-        # qiniu_bucket_url = ""
 
 
-class ApiFileIDField(CharField):
+class ApiField(object):
+    def custom_fields(self, kwargs):
+        self.read_only = kwargs.pop("read_only", False)
+        self.display_id = kwargs.pop("display_id", False)
+        self.in_handler = kwargs.pop("in_handler", False)
+        self.out_handler = kwargs.pop("out_handler", False)
+
+
+class ApiFileField(CharField):
     field_type = "OBJECT"
 
     def __init__(self, max_length=255, *args, **kwargs):
         self.source_name = kwargs.pop("source_name", "file")
         self.source_type = kwargs.pop("source_type", "file")
-        super(ApiFileIDField, self).__init__(max_length=max_length,
-                                             *args,
-                                             **kwargs)
+        super(ApiFileField, self).__init__(max_length=max_length,
+                                           *args,
+                                           **kwargs)
 
-    def db_value(self, file_obj):
+    def db_value(self, file_obj: FileObject) -> str:
+        if not isinstance(file_obj, FileObject):
+            raise TypeError("file_obj should be type of FileObject")
         # 写数据库时会使用该函数返回的值，但是并不会修改参数的值
         r = self.model._meta.storage.write(file_obj)
         return r
 
-    def python_value(self, value):
+    def python_value(self, value) -> FileObject:
         # just for select sql
-        content = self.model._meta.storage.read(value)
-        return content
+        # content = self.model._miuyeta.storage.read(value)
+        # return content
+        return FileObject(hash_value=value, storage=self.model._meta.storage)
 
 
-class ApiCharField(CharField):
-    def __init__(self, max_length=255, read_only=False, *args, **kwargs):
-        self.read_only = read_only
-        self.in_handler = kwargs.pop("in_handler", None)
-        self.out_handler = kwargs.pop("out_handler", None)
-        # if self.in_handler and not isinstance(self.in_handler, types.FunctionType):
-        #     raise Exception("in_handler should be function, but {} found.".format(type(self.in_handler)))
-        # if self.out_handler and not isinstance(self.out_handler, types.FunctionType):
-        #     raise Exception("out_handler should be function, but {} found.".format(type(self.out_handler)))
+class ApiCharField(CharField, ApiField):
+    def __init__(self, max_length=255, *args, **kwargs):
+        self.custom_fields(kwargs)
         super(ApiCharField, self).__init__(max_length=max_length,
                                            *args,
                                            **kwargs)
@@ -429,14 +426,11 @@ class ApiManyToManyField(ManyToManyField):
         return self.through_model
 
 
-class ApiUUIDField(Field):
+class ApiUUIDField(ApiField, Field):
     field_type = "char(32)"
 
-    def __init__(self, read_only=False, **kwargs):
-        self.read_only = read_only
-        self.in_handler = kwargs.pop("in_handler", None)
-        self.out_handler = kwargs.pop("out_handler", None)
-        # self.obj_func = kwargs.pop("obj_func", None)
+    def __init__(self, **kwargs):
+        self.custom_fields(kwargs)
         super(ApiUUIDField, self).__init__(**kwargs)
 
     def db_value(self, value):
@@ -453,26 +447,41 @@ class ApiUUIDField(Field):
         return value
 
     def python_value(self, value):
-        try:
-            value = uuid.UUID(value)  # convert hex string to UUID
-        except Exception as e:
-            print("Failed to convert value {} to uuid".format(value))
+        value = uuid.UUID(value).hex
         return value
 
 
-class ApiAutoField(AutoField):
-    def __init__(self, read_only=False, *args, **kwargs):
-        self.read_only = read_only
+class ApiAutoField(ApiField, AutoField):
+    def __init__(self, *args, **kwargs):
+        self.custom_fields(kwargs)
         super(ApiAutoField, self).__init__(*args, **kwargs)
 
 
-class ApiDateTimeField(DateTimeField):
-    def __init__(self, read_only=False, *args, **kwargs):
-        self.read_only = read_only
+class ApiDateTimeField(DateTimeField, ApiField):
+    def __init__(self, *args, **kwargs):
+        self.custom_fields(kwargs)
         super(ApiDateTimeField, self).__init__(*args, **kwargs)
 
 
-class ApiIntegerField(IntegerField):
-    def __init__(self, read_only=False, *args, **kwargs):
-        self.read_only = read_only
+class ApiIntegerField(IntegerField, ApiField):
+    def __init__(self, *args, **kwargs):
+        self.custom_fields(kwargs)
         super(ApiIntegerField, self).__init__(*args, **kwargs)
+
+
+class ApiBaseModel(ApiModel):
+    id = ApiAutoField(verbose_name="id",
+                      read_only=True,
+                      _hidden=True,
+                      primary_key=True)
+    uid = ApiUUIDField(verbose_name="uid",
+                       default=get_uuid,
+                       unique=True,
+                       read_only=True,
+                       display_id=True)
+    created = ApiDateTimeField(default=datetime.now,
+                               verbose_name="Create Time",
+                               read_only=True)
+    updated = ApiDateTimeField(default=datetime.now,
+                               verbose_name="Update Time",
+                               read_only=True)

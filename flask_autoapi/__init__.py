@@ -99,7 +99,7 @@ class AutoAPI(object):
                 self.api.add_resource(endpoint, url, endpoint=endpoint.__name__.lower(), strict_slashes=False)
             else:
                 url1 = "/".join(["", self.project_name.lower(), endpoint.Model.__name__.lower(), ""])
-                url2 = url1 + "<id>/"
+                url2 = url1 + "<key>/"
                 self.api.add_resource(endpoint, url1, url2, endpoint=endpoint.__name__.lower(), strict_slashes=False)
 
 
