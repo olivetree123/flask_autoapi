@@ -53,6 +53,9 @@ class BaseEndpoint(Resource):
         """
         without_fields = request.args.get("without_fields")
         without_fields = without_fields.split(",") if without_fields else None
+        status = self.Model.validate_for_get(request, key)
+        if not status:
+            return JsonResponse(BAD_REQUEST)
         r = self.Model.get_with_pk(key, without_fields)
         if not r:
             return JsonResponse()
@@ -87,9 +90,11 @@ class BaseEndpoint(Resource):
         if not status:
             return JsonResponse(BAD_REQUEST)
         # params = self.Model.upload_files(**params)
-        if not self.Model.validate(**params):
+        if not self.Model.validate_for_post(request, **params):
             return JsonResponse(BAD_REQUEST)
-        self.Model.diy_before_save(**params)
+        status = self.Model.diy_before_save(request, **params)
+        if not status:
+            return JsonResponse(BAD_REQUEST)
         r = self.Model.create(**params)
         # r = self.Model.get_by_id(r.get_id())
         self.Model.diy_after_save(r)
@@ -123,9 +128,11 @@ class BaseEndpoint(Resource):
         if not status:
             return JsonResponse(BAD_REQUEST)
         params = self.Model.upload_files(**params)
-        if not self.Model.validate(**params):
+        if not self.Model.validate_for_put(request, key, **params):
             return JsonResponse(BAD_REQUEST)
-        self.Model.diy_before_save(**params)
+        status = self.Model.diy_before_save(request, **params)
+        if not status:
+            return JsonResponse(BAD_REQUEST)
         r = self.Model.update_by_pk(key, **params)
         self.Model.diy_after_save(r)
         r.mtom(**params)
@@ -149,6 +156,9 @@ class BaseEndpoint(Resource):
         }
         
         """
+        status = self.Model.validate_for_delete(request, key)
+        if not status:
+            return JsonResponse(code=BAD_REQUEST)
         pk = self.Model._meta.primary_key if not self.Model._meta.display_id else self.Model._meta.display_id
         self.Model.delete().where(pk == key).execute()
         return JsonResponse()

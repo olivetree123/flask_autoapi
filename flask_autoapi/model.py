@@ -270,16 +270,7 @@ class ApiModel(Model):
         return r
 
     @classmethod
-    def validate(cls, **params):
-        """
-        validate 用于验证参数
-        返回 True 表示正确；
-        返回 False 表示错误，会返回 BadRequest
-        """
-        return True
-
-    @classmethod
-    def diy_before_save(cls, **params):
+    def diy_before_save(cls, request, **params) -> bool:
         """
         用于 POST/PUT 方法。
         做一些自定义操作，但是不能修改参数。
@@ -288,10 +279,38 @@ class ApiModel(Model):
         return True
 
     @classmethod
-    def diy_after_save(cls, obj):
+    def diy_after_save(cls, obj) -> bool:
         """
         用于 POST/PUT 方法。
         create/save/update 之后，自定义操作。
+        """
+        return True
+
+    @classmethod
+    def validate_for_get(cls, request, pk_value) -> bool:
+        """
+        用于 GET 方法
+        """
+        return True
+
+    @classmethod
+    def validate_for_put(cls, request, pk_value, **params) -> bool:
+        """
+        用于 PUT 方法
+        """
+        return True
+
+    @classmethod
+    def validate_for_post(cls, request, **params) -> bool:
+        """
+        用于 POST 方法
+        """
+        return True
+
+    @classmethod
+    def validate_for_delete(cls, request, pk_value) -> bool:
+        """
+        用于 DELETE 方法
         """
         return True
 
