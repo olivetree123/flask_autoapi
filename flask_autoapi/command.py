@@ -34,14 +34,15 @@ from flask_autoapi.endpoint import (
 class GenerateApiDoc(Command):
 
     def __init__(self, api, diy_endpoint_list=None, static_folder="static"):
-        super(GenerateApiDoc, self).__init__(name="GenerateApiDoc")
+        super(GenerateApiDoc, self).__init__(name="GenerateApiDoc",
+                                             help="create api document")
         self.api = api
         self.static_folder = static_folder
         self.doc_model_list = api.model_list
         self.diy_endpoint_list = diy_endpoint_list if diy_endpoint_list else []
         self.docs_folder = os.path.join(self.static_folder, "docs")
 
-    def run(self):
+    def callback(self):
         if not os.path.exists(self.static_folder):
             os.makedirs(self.static_folder)
         docs = [

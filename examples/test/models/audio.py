@@ -1,5 +1,5 @@
 from peewee import CharField, BooleanField, IntegerField
-from flask_autoapi.model import FileIDField
+from flask_autoapi.model import ApiFileField
 from models import BaseModel
 
 
@@ -7,7 +7,7 @@ class Audio(BaseModel):
     # file_id 为云存储中文件的 id
     # 你应该总是使用云存储来存储文件
     # 任何模型，需要存储文件 id 时，总是应该使用 file_id 字段
-    file_id = FileIDField(null=True)
+    file_id = ApiFileField(null=True)
     duration = IntegerField(null=True)
 
     class Meta:
