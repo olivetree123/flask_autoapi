@@ -1,13 +1,12 @@
-#coding:utf-8
 from peewee import CharField, BooleanField, IntegerField
 from models import BaseModel
 
 
 class Album(BaseModel):
-    name      = CharField(null=False, index=True, verbose_name="相册名称")
-    desc      = CharField(null=True, verbose_name="说明")
-    cover     = CharField(null=True, verbose_name="封面")
-    dirname   = CharField(null=True, verbose_name="存储目录")
+    name = CharField(null=False, index=True, verbose_name="相册名称")
+    desc = CharField(null=True, verbose_name="说明")
+    cover = CharField(null=True, verbose_name="封面")
+    dirname = CharField(null=True, verbose_name="存储目录")
 
     class Meta:
         group = "Album"

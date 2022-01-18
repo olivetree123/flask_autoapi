@@ -39,7 +39,7 @@ AUTHOR_EMAIL = "olivetree123@163.com"
 
 URL = "https://github.com/olivetree123/flask_autoapi"
 
-VERSION = "0.11.2"
+VERSION = "0.12.0"
 
 LICENSE = "MIT"
 
@@ -53,6 +53,10 @@ setup(
         'Programming Language :: Python',
         'Intended Audience :: Developers',
         'Operating System :: OS Independent',
+    ],
+    install_requires=[
+        "Flask>=1.1.0",
+        "Flask-RESTful>=0.3.9",
     ],
     keywords=KEYWORDS,
     author=AUTHOR,

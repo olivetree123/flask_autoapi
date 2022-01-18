@@ -1,13 +1,22 @@
 import os
 import json
-import peewee
-import inspect
+from click import Command
 from jinja2 import Template
-from flask_script import Command
 
-from flask_autoapi.utils.filter import standard_type, str_align, get_example, is_mtom, mtom_fields, method_field_example, is_foreign
+from flask_autoapi.utils.filter import (
+    standard_type,
+    str_align,
+    get_example,
+    is_mtom,
+    mtom_fields,
+    method_field_example,
+    is_foreign,
+)
 from flask_autoapi.utils.cmd import sys_apidoc
-from flask_autoapi.endpoint import BaseEndpoint, BaseListEndpoint
+from flask_autoapi.endpoint import (
+    BaseEndpoint,
+    BaseListEndpoint,
+)
 
 # doc_tmpl = """
 #         @api {{Method}} {{Url}} {{Title}}
@@ -22,8 +31,10 @@ from flask_autoapi.endpoint import BaseEndpoint, BaseListEndpoint
 # """
 
 
-class GenerateDoc(Command):
+class GenerateApiDoc(Command):
+
     def __init__(self, api, diy_endpoint_list=None, static_folder="static"):
+        super(GenerateApiDoc, self).__init__(name="GenerateApiDoc")
         self.api = api
         self.static_folder = static_folder
         self.doc_model_list = api.model_list

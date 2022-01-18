@@ -1,15 +1,29 @@
 import uuid
-import types
 import werkzeug
 from io import BytesIO
 from datetime import datetime
 from playhouse.shortcuts import model_to_dict
-from peewee import (Model, CharField, ManyToManyField, ForeignKeyField, Field,
-                    FieldAccessor, MetaField, Metadata, AutoField,
-                    DateTimeField, IntegerField, MySQLDatabase)
+from peewee import (
+    Model,
+    CharField,
+    ManyToManyField,
+    ForeignKeyField,
+    Field,
+    FieldAccessor,
+    MetaField,
+    Metadata,
+    AutoField,
+    DateTimeField,
+    IntegerField,
+    MySQLDatabase,
+)
 
-from flask_autoapi.storage import Storage, FileObject
-from flask_autoapi.utils.diyutils import field_to_json, content_md5, get_uuid
+from flask_autoapi.storage import FileObject
+from flask_autoapi.utils.diyutils import (
+    field_to_json,
+    content_md5,
+    get_uuid,
+)
 
 MySQLDatabase.field_types["OBJECT"] = "VARCHAR"
 
@@ -23,6 +37,7 @@ def api_model_to_dict(obj, **kwargs):
 
 
 class MethodClass(object):
+
     def get(self, obj):
         raise NotImplementedError("get function should be implemented.")
 
@@ -50,6 +65,7 @@ class ApiMethodField(MetaField):
 
 
 class ApiMetadata(Metadata):
+
     def __init__(self, model, **kwargs):
         self.method_fields = {}
         self.display_id = None
@@ -69,6 +85,7 @@ class ApiMetadata(Metadata):
 
 
 class ApiModel(Model):
+
     @classmethod
     def set_meta(cls, **kwargs):
         for key, value in kwargs.items():
@@ -366,6 +383,7 @@ class ApiModel(Model):
 
 
 class ApiField(object):
+
     def custom_fields(self, kwargs):
         self.read_only = kwargs.pop("read_only", False)
         self.display_id = kwargs.pop("display_id", False)
@@ -398,6 +416,7 @@ class ApiFileField(CharField):
 
 
 class ApiCharField(CharField, ApiField):
+
     def __init__(self, max_length=255, *args, **kwargs):
         self.custom_fields(kwargs)
         super(ApiCharField, self).__init__(max_length=max_length,
@@ -406,6 +425,7 @@ class ApiCharField(CharField, ApiField):
 
 
 class ApiManyToManyField(ManyToManyField):
+
     def __init__(self, model, **kwargs):
         self.in_handler = kwargs.pop("in_handler", None)
         self.out_handler = kwargs.pop("out_handler", None)
@@ -471,18 +491,21 @@ class ApiUUIDField(ApiField, Field):
 
 
 class ApiAutoField(ApiField, AutoField):
+
     def __init__(self, *args, **kwargs):
         self.custom_fields(kwargs)
         super(ApiAutoField, self).__init__(*args, **kwargs)
 
 
 class ApiDateTimeField(DateTimeField, ApiField):
+
     def __init__(self, *args, **kwargs):
         self.custom_fields(kwargs)
         super(ApiDateTimeField, self).__init__(*args, **kwargs)
 
 
 class ApiIntegerField(IntegerField, ApiField):
+
     def __init__(self, *args, **kwargs):
         self.custom_fields(kwargs)
         super(ApiIntegerField, self).__init__(*args, **kwargs)

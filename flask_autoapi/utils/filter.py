@@ -1,6 +1,4 @@
-# jinja2 filters
 import uuid
-import json
 import peewee
 from datetime import datetime
 
@@ -13,12 +11,14 @@ def standard_type(t):
     t = t.upper()
     if t == "CHAR(32)":
         return "uuid"
-    if t == "VARCHAR" or t.find("CHAR")>=0:
+    if t == "VARCHAR" or t.find("CHAR") >= 0:
         return "string"
     return t.lower()
 
+
 def str_align(word, length=10):
-    return word.ljust(length," ")
+    return word.ljust(length, " ")
+
 
 def get_example(tp, choices=None):
     if choices:
@@ -36,11 +36,14 @@ def get_example(tp, choices=None):
         return 1
     return tp
 
+
 def is_mtom(field):
     return isinstance(field, peewee.ManyToManyField)
 
+
 def is_foreign(field):
     return isinstance(field, peewee.ForeignKeyField)
+
 
 def mtom_fields(field):
     model = field.rel_model
@@ -48,10 +51,12 @@ def mtom_fields(field):
     # fields = model.get_fields() + list(model._meta.manytomany.values())
     return fields
 
+
 def foreign_fields(field):
     model = field.rel_model
     fields = model.get_fields()
     return fields
+
 
 def method_field_example(field):
     if not field.field_type == "METHOD":

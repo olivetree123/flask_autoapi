@@ -1,4 +1,3 @@
-import os
 import subprocess
 
 
@@ -20,13 +19,18 @@ class Cmd(object):
             self.cmd_line = " ".join(self.cmd + list(args[0]))
         else:
             self.cmd_line = " ".join(self.cmd + list(args))
-        process = subprocess.Popen(self.cmd_line, shell=True, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+        process = subprocess.Popen(self.cmd_line,
+                                   shell=True,
+                                   stdin=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
         out, err = process.communicate()
         status_code = process.wait()
         if not status_code:
             print("Command Success: {}".format(self.cmd_line))
         else:
-            print("Command Failed: {}, ERROR_INFO: {}".format(self.cmd_line, err))
+            print("Command Failed: {}, ERROR_INFO: {}".format(
+                self.cmd_line, err))
         return Result(out, err, status_code)
+
 
 sys_apidoc = Cmd("apidoc")
